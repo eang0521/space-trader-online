@@ -95,7 +95,7 @@ export interface GameState {
 export type GameAction =
   | { type: 'MOVE'; toRow: number; toCol: number }
   | { type: 'GATHER'; slotId: string; planetRow: number; planetCol: number }
-  | { type: 'SELL'; buyerCardId: string; dealId: string; cubeIds: string[] }
+  | { type: 'SELL'; buyerCardId: string; dealSells: { dealId: string; cubeIds: string[] }[] }
   | { type: 'DRAW_PRIVATE_BUYER' }
   | { type: 'REMOVE_BUYER'; buyerCardId: string }
   | { type: 'END_TURN' }

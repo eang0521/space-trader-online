@@ -126,8 +126,7 @@ export async function POST(
           state,
           playerIndex,
           action.buyerCardId,
-          action.dealId,
-          action.cubeIds,
+          action.dealSells,
           isPrivate,
         );
         if (!validation.valid) {
@@ -137,8 +136,7 @@ export async function POST(
           state,
           playerIndex,
           action.buyerCardId,
-          action.dealId,
-          action.cubeIds,
+          action.dealSells,
           isPrivate,
         );
         break;
@@ -201,7 +199,7 @@ export async function POST(
     const { error: updateError } = await supabase
       .from('games')
       .update({
-        status: newState.status,
+        status: newState.status === 'placement' ? 'playing' : newState.status,
         state: newState,
       })
       .eq('id', gameId);

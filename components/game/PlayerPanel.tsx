@@ -1,6 +1,6 @@
 'use client';
-import { PlayerState, ResourceColor } from '@/lib/game/types';
-import { PLAYER_COLOR_MAP, RESOURCE_COLOR_MAP } from '@/lib/utils';
+import { PlayerState } from '@/lib/game/types';
+import { PLAYER_COLOR_MAP } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { ResourceCube } from './ResourceCube';
 
@@ -8,14 +8,6 @@ interface PlayerPanelProps {
   players: PlayerState[];
   currentPlayerIndex: number;
   mySessionId: string | null;
-}
-
-function groupByColor(cubes: PlayerState['supply']): Partial<Record<ResourceColor, number>> {
-  const counts: Partial<Record<ResourceColor, number>> = {};
-  for (const cube of cubes) {
-    counts[cube.color] = (counts[cube.color] ?? 0) + 1;
-  }
-  return counts;
 }
 
 // Rocket icon
@@ -42,7 +34,6 @@ export function PlayerPanel({ players, currentPlayerIndex, mySessionId }: Player
         const isCurrentTurn = i === currentPlayerIndex;
         const isMe = player.sessionId === mySessionId;
         const colorInfo = PLAYER_COLOR_MAP[player.color];
-        const supplyCounts = groupByColor(player.supply);
 
         return (
           <div
@@ -85,13 +76,8 @@ export function PlayerPanel({ players, currentPlayerIndex, mySessionId }: Player
 
             {/* Supply */}
             <div className="flex flex-wrap gap-1 min-h-4">
-              {Object.entries(supplyCounts).map(([color, count]) => (
-                <div key={color} className="flex items-center gap-0.5">
-                  <ResourceCube color={color as ResourceColor} size="sm" />
-                  {(count ?? 0) > 1 && (
-                    <span className="text-xs text-gray-400">×{count}</span>
-                  )}
-                </div>
+              {player.supply.map((cube) => (
+                <ResourceCube key={cube.id} color={cube.color} size="sm" />
               ))}
               {player.supply.length === 0 && (
                 <span className="text-xs text-gray-600 italic">Empty supply</span>

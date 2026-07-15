@@ -83,13 +83,12 @@ export default function GamePage() {
   );
 
   const handleSell = useCallback(
-    async (buyerCardId: string, dealId: string, cubeIds: string[]) => {
+    async (buyerCardId: string, dealSells: { dealId: string; cubeIds: string[] }[]) => {
       setActionError(null);
       const result = await performAction({
         type: 'SELL',
         buyerCardId,
-        dealId,
-        cubeIds,
+        dealSells,
       });
       if (result.error) setActionError(result.error);
     },
@@ -200,6 +199,7 @@ export default function GamePage() {
             playerSupply={myPlayer?.supply ?? []}
             actionsRemaining={gameState.actionsRemaining}
             isMyTurn={isMyTurn}
+            gameStatus={gameState.status}
             onSell={handleSell}
             onDrawPrivateBuyer={handleDrawPrivateBuyer}
             onRemoveBuyer={handleRemoveBuyer}

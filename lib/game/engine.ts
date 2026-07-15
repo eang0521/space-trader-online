@@ -355,8 +355,7 @@ export function isValidSell(
   state: GameState,
   playerIndex: number,
   buyerCardId: string,
-  dealId: string,
-  cubeIds: string[],
+  dealSells: { dealId: string; cubeIds: string[] }[],
   isPrivate = false,
 ): { valid: boolean; reason?: string } {
   if (state.status !== 'playing' && state.status !== 'game_end') {
@@ -368,10 +367,12 @@ export function isValidSell(
   if (state.actionsRemaining < 1) {
     return { valid: false, reason: 'No actions remaining' };
   }
+  if (dealSells.length === 0) {
+    return { valid: false, reason: 'No deals to sell' };
+  }
 
   const player = state.players[playerIndex];
 
-  // Determine which buyers are valid to sell to
   if (isPrivate) {
     if (!player.privateBuyers.includes(buyerCardId)) {
       return { valid: false, reason: 'You do not have this private buyer' };
@@ -384,60 +385,56 @@ export function isValidSell(
     if (!marketBuyer) {
       return { valid: false, reason: 'Buyer not in market' };
     }
-    // Check deal not already completed
-    if (marketBuyer.completedDealIds.includes(dealId)) {
-      return { valid: false, reason: 'Deal already completed' };
+    for (const { dealId } of dealSells) {
+      if (marketBuyer.completedDealIds.includes(dealId)) {
+        return { valid: false, reason: `Deal ${dealId} already completed` };
+      }
     }
   }
 
   const buyerDef = getBuyerDef(buyerCardId);
-  const dealDef = buyerDef.deals.find((d) => d.id === dealId);
-  if (!dealDef) {
-    return { valid: false, reason: 'Deal not found on buyer' };
-  }
-
-  // Check private buyer deal completion separately
-  if (isPrivate) {
-    // Track completed deals for private buyers in player state
-    // (We don't have a market entry; private buyers track completions in player state)
-    // For now private buyers do not track completedDealIds — each deal can be completed once
-    // We need to look it up from player's privateBuyerCompletions if we add that structure.
-    // For this implementation: we track private completions in state.market is NOT right.
-    // Simple approach: private buyers can only sell each deal once. Track via a field we derive.
-    // We'll rely on the apply function to verify.
-  }
-
-  // Validate cube IDs are in player supply
   const supplyCubeIds = new Set(player.supply.map((c) => c.id));
-  for (const id of cubeIds) {
-    if (!supplyCubeIds.has(id)) {
-      return { valid: false, reason: `Cube ${id} not in your supply` };
+  const allUsedCubeIds = new Set<string>();
+
+  for (const { dealId, cubeIds } of dealSells) {
+    const dealDef = buyerDef.deals.find((d) => d.id === dealId);
+    if (!dealDef) {
+      return { valid: false, reason: `Deal ${dealId} not found on buyer` };
     }
-  }
 
-  // Validate cubes match deal requirements
-  const usedCubes = cubeIds.map((id) => player.supply.find((c) => c.id === id)!);
-  const colorCounts: Partial<Record<ResourceColor, number>> = {};
-  for (const cube of usedCubes) {
-    colorCounts[cube.color] = (colorCounts[cube.color] ?? 0) + 1;
-  }
+    for (const id of cubeIds) {
+      if (!supplyCubeIds.has(id)) {
+        return { valid: false, reason: `Cube ${id} not in your supply` };
+      }
+      if (allUsedCubeIds.has(id)) {
+        return { valid: false, reason: `Cube ${id} used in multiple deals` };
+      }
+      allUsedCubeIds.add(id);
+    }
 
-  for (const req of dealDef.requirements) {
-    const have = colorCounts[req.color] ?? 0;
-    if (have < req.count) {
+    const usedCubes = cubeIds.map((id) => player.supply.find((c) => c.id === id)!);
+    const colorCounts: Partial<Record<ResourceColor, number>> = {};
+    for (const cube of usedCubes) {
+      colorCounts[cube.color] = (colorCounts[cube.color] ?? 0) + 1;
+    }
+
+    for (const req of dealDef.requirements) {
+      const have = colorCounts[req.color] ?? 0;
+      if (have < req.count) {
+        return {
+          valid: false,
+          reason: `Deal ${dealDef.label}: need ${req.count} ${req.color}, have ${have}`,
+        };
+      }
+    }
+
+    const totalRequired = dealDef.requirements.reduce((s, r) => s + r.count, 0);
+    if (cubeIds.length !== totalRequired) {
       return {
         valid: false,
-        reason: `Need ${req.count} ${req.color} cube${req.count > 1 ? 's' : ''}, have ${have}`,
+        reason: `Deal ${dealDef.label}: wrong number of cubes. Need ${totalRequired}, got ${cubeIds.length}`,
       };
     }
-  }
-
-  const totalRequired = dealDef.requirements.reduce((s, r) => s + r.count, 0);
-  if (cubeIds.length !== totalRequired) {
-    return {
-      valid: false,
-      reason: `Wrong number of cubes. Need ${totalRequired}, got ${cubeIds.length}`,
-    };
   }
 
   return { valid: true };
@@ -447,22 +444,33 @@ export function applySell(
   state: GameState,
   playerIndex: number,
   buyerCardId: string,
-  dealId: string,
-  cubeIds: string[],
+  dealSells: { dealId: string; cubeIds: string[] }[],
   isPrivate = false,
 ): GameState {
   const buyerDef = getBuyerDef(buyerCardId);
-  const dealDef = buyerDef.deals.find((d) => d.id === dealId)!;
 
-  // Remove cubes from player supply
-  const cubeIdSet = new Set(cubeIds);
+  const allCubeIdSet = new Set<string>();
+  let totalCredits = 0;
+  const dealLabels: string[] = [];
+
+  for (const { dealId, cubeIds } of dealSells) {
+    const dealDef = buyerDef.deals.find((d) => d.id === dealId)!;
+    for (const id of cubeIds) allCubeIdSet.add(id);
+    totalCredits += dealDef.credits;
+    dealLabels.push(dealDef.label);
+  }
+
   const newPlayers = state.players.map((p, i) => {
     if (i !== playerIndex) return p;
-    return {
+    const updated = {
       ...p,
-      supply: p.supply.filter((c) => !cubeIdSet.has(c.id)),
-      score: p.score + dealDef.credits,
+      supply: p.supply.filter((c) => !allCubeIdSet.has(c.id)),
+      score: p.score + totalCredits,
     };
+    if (isPrivate) {
+      return { ...updated, privateBuyers: p.privateBuyers.filter((id) => id !== buyerCardId) };
+    }
+    return updated;
   });
 
   let newState: GameState = {
@@ -471,119 +479,45 @@ export function applySell(
     actionsRemaining: state.actionsRemaining - 1,
   };
 
-  if (isPrivate) {
-    // Remove the private buyer from player's list after completing a deal
-    // Each private buyer can only be sold once (all deals in one action)
-    // Actually: per rules each deal is a separate sell action; but private buyers stay until all deals done
-    // We won't remove the private buyer card here; just track the deal.
-    // Since we don't have a separate market entry for private buyers, we'll store completions
-    // in a special market-like structure. For simplicity: private buyers are single-use per deal.
-    // We'll add completedDeals tracking to player state via privateBuyerCompletions map.
-    const player = newState.players[playerIndex];
-    // We store private buyer completions as entries in market with negative indicator
-    // Better: add privateBuyerCompletions field. Since types are fixed, we'll use a naming convention.
-    // The simplest approach with our current types: treat private buyer as a market entry
-    // that exists in a virtual slot. We'll just log it and not track completion in this implementation.
-    newState = addLog(
-      newState,
-      playerIndex,
-      `sold deal ${dealDef.label} to private buyer for ${dealDef.credits} credits`,
+  if (!isPrivate) {
+    const marketBuyerIdx = newState.market.findIndex((b) => b.cardId === buyerCardId);
+    const newCompletedIds = [
+      ...newState.market[marketBuyerIdx].completedDealIds,
+      ...dealSells.map((d) => d.dealId),
+    ];
+    const updatedMarketBuyer = {
+      ...newState.market[marketBuyerIdx],
+      completedDealIds: newCompletedIds,
+    };
+
+    let newMarket = newState.market.map((b, i) =>
+      i === marketBuyerIdx ? updatedMarketBuyer : b,
     );
-    // Remove the private buyer card after all deals are completed
-    const updatedPrivateBuyerDeals = getPrivateBuyerCompletedDeals(newState, playerIndex, buyerCardId);
-    updatedPrivateBuyerDeals.add(dealId);
-    const allDealsCompleted = buyerDef.deals.every((d) => updatedPrivateBuyerDeals.has(d.id));
+
+    const allDealsCompleted = buyerDef.deals.every((d) =>
+      newCompletedIds.includes(d.id),
+    );
+
+    let newDeck = [...newState.buyerDeck];
     if (allDealsCompleted) {
-      newState = {
-        ...newState,
-        players: newState.players.map((p, i) => {
-          if (i !== playerIndex) return p;
-          return {
-            ...p,
-            privateBuyers: p.privateBuyers.filter((id) => id !== buyerCardId),
-          };
-        }),
-      };
-    }
-    // Store the completion in game log so we can derive it later
-    // We'll store in a flat log message; actual tracking needs privateBuyerCompletions in state.
-    // For MVP: store completed deals as a special log format we can scan.
-    return newState;
-  }
-
-  // Public market sell
-  const marketBuyerIdx = newState.market.findIndex((b) => b.cardId === buyerCardId);
-  const updatedMarketBuyer = {
-    ...newState.market[marketBuyerIdx],
-    completedDealIds: [...newState.market[marketBuyerIdx].completedDealIds, dealId],
-  };
-
-  let newMarket = newState.market.map((b, i) =>
-    i === marketBuyerIdx ? updatedMarketBuyer : b,
-  );
-
-  // If all deals completed, replace from deck
-  const allDealsCompleted = buyerDef.deals.every((d) =>
-    updatedMarketBuyer.completedDealIds.includes(d.id),
-  );
-
-  let newDeck = [...newState.buyerDeck];
-  if (allDealsCompleted) {
-    if (newDeck.length > 0) {
-      const [nextBuyerId, ...restDeck] = newDeck;
-      newDeck = restDeck;
-      newMarket = newMarket.map((b, i) =>
-        i === marketBuyerIdx
-          ? { cardId: nextBuyerId, completedDealIds: [] }
-          : b,
-      );
-    } else {
-      // No replacement available — remove from market
-      newMarket = newMarket.filter((_, i) => i !== marketBuyerIdx);
-    }
-  }
-
-  newState = {
-    ...newState,
-    market: newMarket,
-    buyerDeck: newDeck,
-  };
-
-  newState = addLog(
-    newState,
-    playerIndex,
-    `sold deal ${dealDef.label} to ${buyerCardId} for ${dealDef.credits} credits`,
-  );
-
-  return newState;
-}
-
-// Helper: derive which private buyer deals have been completed from the log
-// This is a limitation of the current state structure; in production you'd add a field.
-function getPrivateBuyerCompletedDeals(
-  state: GameState,
-  playerIndex: number,
-  buyerCardId: string,
-): Set<string> {
-  const player = state.players[playerIndex];
-  const completed = new Set<string>();
-  // Scan log for private buyer completions by this player for this buyer
-  for (const entry of state.log) {
-    if (
-      entry.playerName === player.displayName &&
-      entry.message.includes(`private buyer for`) &&
-      entry.message.includes(buyerCardId)
-    ) {
-      // Extract deal label - this is a heuristic; real implementation would use structured data
-      const match = entry.message.match(/deal ([A-D]) to private buyer/);
-      if (match) {
-        const buyerDef = getBuyerDef(buyerCardId);
-        const deal = buyerDef.deals.find((d) => d.label === match[1]);
-        if (deal) completed.add(deal.id);
+      if (newDeck.length > 0) {
+        const [nextBuyerId, ...restDeck] = newDeck;
+        newDeck = restDeck;
+        newMarket = newMarket.map((b, i) =>
+          i === marketBuyerIdx ? { cardId: nextBuyerId, completedDealIds: [] } : b,
+        );
+      } else {
+        newMarket = newMarket.filter((_, i) => i !== marketBuyerIdx);
       }
     }
+
+    newState = { ...newState, market: newMarket, buyerDeck: newDeck };
   }
-  return completed;
+
+  const dealText =
+    dealLabels.length === 1 ? `deal ${dealLabels[0]}` : `deals ${dealLabels.join(', ')}`;
+  const buyerText = isPrivate ? 'private buyer' : buyerCardId;
+  return addLog(newState, playerIndex, `sold ${dealText} to ${buyerText} for ${totalCredits} credits`);
 }
 
 // ---------------------------------------------------------------------------

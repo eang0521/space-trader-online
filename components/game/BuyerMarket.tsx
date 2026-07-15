@@ -1,5 +1,5 @@
 'use client';
-import { ActiveBuyer, ResourceCube } from '@/lib/game/types';
+import { ActiveBuyer, GameStatus, ResourceCube } from '@/lib/game/types';
 import { getBuyerDef } from '@/lib/game/engine';
 import { BuyerCard } from './BuyerCard';
 import { Button } from '@/components/ui/Button';
@@ -10,11 +10,11 @@ interface BuyerMarketProps {
   playerSupply: ResourceCube[];
   actionsRemaining: number;
   isMyTurn: boolean;
-  onSell: (buyerCardId: string, dealId: string, cubeIds: string[]) => void;
+  gameStatus: GameStatus;
+  onSell: (buyerCardId: string, dealSells: { dealId: string; cubeIds: string[] }[]) => void;
   onDrawPrivateBuyer: () => void;
   onRemoveBuyer: (buyerCardId: string) => void;
   privateBuyers?: ActiveBuyer[];
-  completedPrivateDealIds?: Record<string, string[]>;
 }
 
 export function BuyerMarket({
@@ -23,11 +23,11 @@ export function BuyerMarket({
   playerSupply,
   actionsRemaining,
   isMyTurn,
+  gameStatus,
   onSell,
   onDrawPrivateBuyer,
   onRemoveBuyer,
   privateBuyers = [],
-  completedPrivateDealIds = {},
 }: BuyerMarketProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -53,9 +53,7 @@ export function BuyerMarket({
                 buyer={activeBuyer}
                 def={def}
                 playerSupply={isMyTurn ? playerSupply : []}
-                onSell={(dealId, cubeIds) =>
-                  onSell(activeBuyer.cardId, dealId, cubeIds)
-                }
+                onSell={(dealSells) => onSell(activeBuyer.cardId, dealSells)}
               />
               {/* Remove buyer button */}
               {isMyTurn && (
@@ -112,10 +110,8 @@ export function BuyerMarket({
                 def={def}
                 playerSupply={isMyTurn ? playerSupply : []}
                 isPrivate
-                completedPrivateDealIds={completedPrivateDealIds[pb.cardId] ?? []}
-                onSell={(dealId, cubeIds) =>
-                  onSell(pb.cardId, dealId, cubeIds)
-                }
+                canSellNow={gameStatus === 'game_end'}
+                onSell={(dealSells) => onSell(pb.cardId, dealSells)}
               />
             );
           })}
