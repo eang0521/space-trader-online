@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { ActiveBuyer, PlayerState } from '@/lib/game/types';
 import { getBuyerDef } from '@/lib/game/engine';
+import { RulebookModal } from '@/components/game/RulebookModal';
 
 export default function GamePage() {
   const params = useParams();
@@ -26,6 +27,7 @@ export default function GamePage() {
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [rulebookOpen, setRulebookOpen] = useState(false);
 
   // Derived state
   const myPlayerIndex = gameState?.players.findIndex(
@@ -163,9 +165,16 @@ export default function GamePage() {
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
                 Planet Grid
               </h2>
-              <span className="text-xs text-gray-500">
-                Turn {gameState.turnNumber}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500">Turn {gameState.turnNumber}</span>
+                <button
+                  onClick={() => setRulebookOpen(true)}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                  title="View rulebook"
+                >
+                  How to Play
+                </button>
+              </div>
             </div>
             <GameBoard
               gameState={gameState}
@@ -222,6 +231,8 @@ export default function GamePage() {
           </div>
         </div>
       </div>
+
+      <RulebookModal isOpen={rulebookOpen} onClose={() => setRulebookOpen(false)} />
 
       {/* Game end modal */}
       <Modal

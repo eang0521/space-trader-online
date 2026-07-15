@@ -5,6 +5,7 @@ import { useSession } from '@/hooks/useSession';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { RulebookModal } from '@/components/game/RulebookModal';
 
 type ModalMode = 'create' | 'join' | null;
 
@@ -13,6 +14,7 @@ export default function LandingPage() {
   const { sessionId } = useSession();
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [rulebookOpen, setRulebookOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [gameCode, setGameCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -133,12 +135,15 @@ export default function LandingPage() {
         </p>
 
         {/* CTA Buttons */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-wrap gap-4 justify-center">
           <Button size="lg" onClick={() => handleOpenModal('create')}>
             Create Game
           </Button>
           <Button size="lg" variant="secondary" onClick={() => handleOpenModal('join')}>
             Join Game
+          </Button>
+          <Button size="lg" variant="ghost" onClick={() => setRulebookOpen(true)}>
+            How to Play
           </Button>
         </div>
       </div>
@@ -200,6 +205,8 @@ export default function LandingPage() {
           </Button>
         </div>
       </Modal>
+
+      <RulebookModal isOpen={rulebookOpen} onClose={() => setRulebookOpen(false)} />
 
       {/* Join game modal */}
       <Modal
