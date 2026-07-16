@@ -57,6 +57,19 @@ export function LobbyRoom({
     }
   };
 
+  const handleRemoveBot = async (botSessionId: string) => {
+    if (!sessionId) return;
+    try {
+      await fetch(`/api/games/${gameId}/add-bot`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, botSessionId }),
+      });
+    } catch (err) {
+      console.error('Remove bot error:', err);
+    }
+  };
+
   const handleCopyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code);
@@ -135,7 +148,20 @@ export function LobbyRoom({
           Players ({lobbyPlayers.length}/4)
         </h2>
         {slots.map((player, i) => (
-          <PlayerSlot key={player?.id ?? `empty-${i}`} player={player} seatIndex={i} />
+          <div key={player?.id ?? `empty-${i}`} className="flex items-center gap-2">
+            <div className="flex-1">
+              <PlayerSlot player={player} seatIndex={i} />
+            </div>
+            {isHost && player?.isBot && (
+              <button
+                onClick={() => handleRemoveBot(player.sessionId)}
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-900/30 transition-colors"
+                title="Remove CPU player"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         ))}
       </div>
 

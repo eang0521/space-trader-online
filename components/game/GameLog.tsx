@@ -1,5 +1,4 @@
 'use client';
-import { useEffect, useRef } from 'react';
 import { GameLogEntry, LogEntryKind } from '@/lib/game/types';
 import { PLAYER_COLOR_MAP, RESOURCE_COLOR_MAP, cn } from '@/lib/utils';
 
@@ -40,33 +39,27 @@ function TurnDivider({ turnNumber }: { turnNumber: number }) {
 }
 
 export function GameLog({ log }: GameLogProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [log.length]);
-
-  // Collect visible entries (hide end_turn; use them only for turn-boundary detection)
   type RenderedItem =
     | { type: 'divider'; turnNumber: number; key: string }
     | { type: 'entry'; entry: GameLogEntry };
 
+  // Build items newest-first: iterate log in reverse, insert turn dividers between
+  // turn groups. The divider label matches the turn block immediately above it.
   const items: RenderedItem[] = [];
   let lastTurn: number | undefined = undefined;
 
-  for (const entry of log) {
+  for (let i = log.length - 1; i >= 0; i--) {
+    const entry = log[i];
     const isEndTurn = entry.kind === 'end_turn';
     const turnNum = entry.turnNumber;
 
-    // Insert a divider when the turn number changes (skip for the very first entry)
+    // When the turn number changes (going from a newer turn to an older one),
+    // insert a divider labelled with the turn we just finished rendering above.
     if (turnNum !== undefined && turnNum !== lastTurn && lastTurn !== undefined) {
-      // The divider labels the NEW turn starting
-      items.push({ type: 'divider', turnNumber: turnNum, key: `div-${turnNum}` });
+      items.push({ type: 'divider', turnNumber: lastTurn, key: `div-${lastTurn}-${i}` });
     }
     if (turnNum !== undefined) lastTurn = turnNum;
 
-    // Don't render end_turn entries as rows — the divider already signals the boundary
     if (!isEndTurn) {
       items.push({ type: 'entry', entry });
     }
@@ -77,7 +70,7 @@ export function GameLog({ log }: GameLogProps) {
       <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2 flex-shrink-0">
         Game Log
       </h2>
-      <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar min-h-0 pr-1">
+      <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0 pr-1">
         {items.length === 0 && (
           <p className="text-gray-600 text-xs italic px-1 pt-1">No actions yet</p>
         )}
@@ -93,28 +86,17 @@ export function GameLog({ log }: GameLogProps) {
 
           return (
             <div key={entry.id} className="flex items-start gap-1.5 py-0.5 text-xs group">
-              {/* Action icon */}
               <span
-                className={cn(
-                  'shrink-0 w-3.5 text-center font-mono mt-px',
-                  KIND_COLOR[kind],
-                )}
+                className={cn('shrink-0 w-3.5 text-center font-mono mt-px', KIND_COLOR[kind])}
                 title={kind}
               >
                 {KIND_ICON[kind]}
               </span>
 
-              {/* Player name */}
-              <span
-                className={cn(
-                  'font-semibold shrink-0',
-                  colorInfo ? colorInfo.text : 'text-indigo-400',
-                )}
-              >
+              <span className={cn('font-semibold shrink-0', colorInfo ? colorInfo.text : 'text-indigo-400')}>
                 {entry.playerName}
               </span>
 
-              {/* Message body */}
               <span className="text-gray-300 leading-tight">
                 {kind === 'gather' && entry.resource ? (
                   <>

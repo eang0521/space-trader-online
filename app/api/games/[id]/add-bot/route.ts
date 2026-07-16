@@ -80,3 +80,61 @@ export async function POST(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id: gameId } = await params;
+    const body = await request.json();
+    const { sessionId, botSessionId } = body as {
+      sessionId?: string;
+      botSessionId?: string;
+    };
+
+    if (!sessionId || !botSessionId) {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+
+    const { data: game, error: gameError } = await supabase
+      .from('games')
+      .select('id, status, host_session_id')
+      .eq('id', gameId)
+      .single();
+
+    if (gameError || !game) {
+      return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+    }
+
+    if (game.status !== 'lobby') {
+      return NextResponse.json({ error: 'Can only remove bots before the game starts' }, { status: 409 });
+    }
+
+    if (game.host_session_id !== sessionId) {
+      return NextResponse.json({ error: 'Only the host can remove bots' }, { status: 403 });
+    }
+
+    if (!botSessionId.startsWith('bot:')) {
+      return NextResponse.json({ error: 'Can only remove bot players this way' }, { status: 400 });
+    }
+
+    const { error: deleteError } = await supabase
+      .from('game_players')
+      .delete()
+      .eq('game_id', gameId)
+      .eq('session_id', botSessionId);
+
+    if (deleteError) {
+      console.error('Bot remove error:', deleteError);
+      return NextResponse.json({ error: 'Failed to remove bot' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /api/games/[id]/add-bot error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
