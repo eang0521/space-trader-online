@@ -576,24 +576,23 @@ export function canRemoveBuyer(state: GameState, buyerCardId: string): boolean {
 
   if (incompleteDealDefs.length === 0) return false; // all deals done
 
-  // Tally available resources: on board + in supplies
+  // A deal is completable only if a single player can fulfill it —
+  // their current supply plus any cubes still on the board (best case).
   const boardCubes = countCubesOnBoard(state);
-  const supplyCubes = countCubesInSupplies(state);
-  const totalAvailable: Record<ResourceColor, number> = {
-    blue: boardCubes.blue + supplyCubes.blue,
-    green: boardCubes.green + supplyCubes.green,
-    yellow: boardCubes.yellow + supplyCubes.yellow,
-    white: boardCubes.white + supplyCubes.white,
-    red: boardCubes.red + supplyCubes.red,
-    black: boardCubes.black + supplyCubes.black,
-  };
 
-  // If ANY incomplete deal could theoretically be completed (enough resources exist)
   for (const deal of incompleteDealDefs) {
-    const canComplete = deal.requirements.every(
-      (req) => totalAvailable[req.color] >= req.count,
-    );
-    if (canComplete) return false; // at least one deal is still possible
+    for (const player of state.players) {
+      // Count this player's supply by color
+      const playerCounts: Record<ResourceColor, number> = {
+        blue: 0, green: 0, yellow: 0, white: 0, red: 0, black: 0,
+      };
+      for (const cube of player.supply) playerCounts[cube.color]++;
+
+      const canComplete = deal.requirements.every(
+        (req) => playerCounts[req.color] + boardCubes[req.color] >= req.count,
+      );
+      if (canComplete) return false; // this player could still complete this deal
+    }
   }
 
   // No incomplete deal can be completed
