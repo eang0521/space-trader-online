@@ -25,6 +25,7 @@ export function LobbyRoom({
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [colorLoading, setColorLoading] = useState(false);
+  const [addingBot, setAddingBot] = useState(false);
 
   const me = lobbyPlayers.find((p) => p.sessionId === sessionId);
   const isHost = me?.isHost ?? false;
@@ -37,6 +38,24 @@ export function LobbyRoom({
     isHost &&
     lobbyPlayers.length >= 2 &&
     lobbyPlayers.every((p) => p.color !== null);
+
+  const canAddBot = isHost && lobbyPlayers.length < 4;
+
+  const handleAddBot = async () => {
+    if (!sessionId || addingBot || !canAddBot) return;
+    setAddingBot(true);
+    try {
+      await fetch(`/api/games/${gameId}/add-bot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+    } catch (err) {
+      console.error('Add bot error:', err);
+    } finally {
+      setAddingBot(false);
+    }
+  };
 
   const handleCopyCode = useCallback(async () => {
     try {
@@ -141,15 +160,27 @@ export function LobbyRoom({
       <div className="flex flex-col gap-2">
         {isHost ? (
           <>
-            <Button
-              onClick={handleStart}
-              loading={starting}
-              disabled={!canStart}
-              size="lg"
-              className="w-full"
-            >
-              Start Game
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleStart}
+                loading={starting}
+                disabled={!canStart}
+                size="lg"
+                className="flex-1"
+              >
+                Start Game
+              </Button>
+              <Button
+                onClick={handleAddBot}
+                loading={addingBot}
+                disabled={!canAddBot}
+                size="lg"
+                className="shrink-0"
+                variant="secondary"
+              >
+                + CPU
+              </Button>
+            </div>
             {!canStart && lobbyPlayers.length < 2 && (
               <p className="text-xs text-amber-400 text-center">
                 Need at least 2 players to start

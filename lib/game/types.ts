@@ -64,6 +64,7 @@ export interface PlayerState {
   shipRow: number;
   shipCol: number;
   isHost: boolean;
+  isBot?: boolean;
 }
 
 export type LogEntryKind =
@@ -123,4 +124,5 @@ export interface LobbyPlayer {
   color: PlayerColor | null;
   seatIndex: number;
   isHost: boolean;
+  isBot?: boolean;
 }

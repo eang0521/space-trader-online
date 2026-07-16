@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createInitialGameState } from '@/lib/game/setup';
-import { LobbyPlayer, PlayerColor } from '@/lib/game/types';
+import { LobbyPlayer, PlayerColor, GameState } from '@/lib/game/types';
+import { autoBotPlacement, runBotTurn } from '@/lib/game/bot';
 
 interface GamePlayerRow {
   id: string;
@@ -88,10 +89,14 @@ export async function POST(
       color: p.color as PlayerColor,
       seatIndex: p.seat_index,
       isHost: p.is_host,
+      isBot: p.session_id.startsWith('bot:'),
     }));
 
     // Create initial game state
-    const initialState = createInitialGameState(gameId, game.code, lobbyPlayers);
+    let initialState: GameState = createInitialGameState(gameId, game.code, lobbyPlayers);
+
+    // Auto-handle bot turns at game start (placement or playing phase)
+    initialState = advanceBotTurns(initialState);
 
     // Update game status and state
     const { error: updateError } = await supabase
@@ -112,4 +117,22 @@ export async function POST(
     console.error('POST /api/games/[id]/start error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+// Auto-place bots during placement phase and run bot turns during playing phase.
+function advanceBotTurns(state: GameState): GameState {
+  let s = state;
+  for (let guard = 0; guard < 20; guard++) {
+    const currentPlayer = s.players[s.currentPlayerIndex];
+    if (!currentPlayer?.isBot) break;
+
+    if (s.status === 'placement') {
+      s = autoBotPlacement(s, s.currentPlayerIndex);
+    } else if (s.status === 'playing' || s.status === 'game_end') {
+      s = runBotTurn(s, s.currentPlayerIndex);
+    } else {
+      break;
+    }
+  }
+  return s;
 }

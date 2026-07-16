@@ -98,6 +98,7 @@ export function createInitialGameState(
       shipRow: -1,
       shipCol: -1,
       isHost: lp.isHost,
+      isBot: lp.sessionId.startsWith('bot:'),
     };
   });
 

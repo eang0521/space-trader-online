@@ -17,6 +17,25 @@ import {
   isValidPlacement,
   applyPlacement,
 } from '@/lib/game/engine';
+import { runBotTurn, autoBotPlacement } from '@/lib/game/bot';
+
+// After any action that could hand control to a bot, run all consecutive bot turns.
+function advanceBotTurns(state: GameState): GameState {
+  let s = state;
+  for (let guard = 0; guard < 20; guard++) {
+    const currentPlayer = s.players[s.currentPlayerIndex];
+    if (!currentPlayer?.isBot) break;
+
+    if (s.status === 'placement') {
+      s = autoBotPlacement(s, s.currentPlayerIndex);
+    } else if (s.status === 'playing' || s.status === 'game_end') {
+      s = runBotTurn(s, s.currentPlayerIndex);
+    } else {
+      break;
+    }
+  }
+  return s;
+}
 
 export async function POST(
   request: NextRequest,
@@ -178,6 +197,7 @@ export async function POST(
           return NextResponse.json({ error: validation.reason }, { status: 400 });
         }
         newState = applyPlacement(state, playerIndex, action.row, action.col);
+        newState = advanceBotTurns(newState);
         break;
       }
 
@@ -187,6 +207,7 @@ export async function POST(
         }
         newState = addLog(state, playerIndex, 'ended their turn', 'end_turn');
         newState = advanceTurn(newState);
+        newState = advanceBotTurns(newState);
         break;
       }
 

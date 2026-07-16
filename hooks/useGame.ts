@@ -29,6 +29,7 @@ function rowToLobbyPlayer(row: GamePlayerRow): LobbyPlayer {
     color: row.color as LobbyPlayer['color'],
     seatIndex: row.seat_index,
     isHost: row.is_host,
+    isBot: row.session_id.startsWith('bot:'),
   };
 }
 

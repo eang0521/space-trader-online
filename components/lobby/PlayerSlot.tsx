@@ -58,6 +58,11 @@ export function PlayerSlot({ player, seatIndex }: PlayerSlotProps) {
             Host
           </span>
         )}
+        {player.isBot && (
+          <span className="text-xs bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded-full font-medium">
+            CPU
+          </span>
+        )}
       </div>
     </div>
   );
