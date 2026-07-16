@@ -38,17 +38,32 @@ export function enumerateCandidates(state: GameState, playerIndex: number): Game
     }
   }
 
-  // SELL on market buyers — build best possible sell for each buyer
-  for (const activeBuyer of state.market) {
-    const deals = buildBestSellDeals(
-      player.supply,
-      activeBuyer.cardId,
-      activeBuyer.completedDealIds,
-    );
-    if (deals.length > 0) {
-      const v = isValidSell(state, playerIndex, activeBuyer.cardId, deals, false);
-      if (v.valid) {
-        candidates.push({ type: 'SELL', buyerCardId: activeBuyer.cardId, dealSells: deals });
+  // SELL on market buyers (playing phase only)
+  if (state.status !== 'game_end') {
+    for (const activeBuyer of state.market) {
+      const deals = buildBestSellDeals(
+        player.supply,
+        activeBuyer.cardId,
+        activeBuyer.completedDealIds,
+      );
+      if (deals.length > 0) {
+        const v = isValidSell(state, playerIndex, activeBuyer.cardId, deals, false);
+        if (v.valid) {
+          candidates.push({ type: 'SELL', buyerCardId: activeBuyer.cardId, dealSells: deals });
+        }
+      }
+    }
+  }
+
+  // SELL private buyers (game_end phase only)
+  if (state.status === 'game_end') {
+    for (const privateBuyerId of player.privateBuyers) {
+      const deals = buildBestSellDeals(player.supply, privateBuyerId, []);
+      if (deals.length > 0) {
+        const v = isValidSell(state, playerIndex, privateBuyerId, deals, true);
+        if (v.valid) {
+          candidates.push({ type: 'SELL', buyerCardId: privateBuyerId, dealSells: deals });
+        }
       }
     }
   }

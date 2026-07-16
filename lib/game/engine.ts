@@ -375,6 +375,9 @@ export function isValidSell(
       return { valid: false, reason: 'Private buyer sales only allowed during game end phase' };
     }
   } else {
+    if (state.status === 'game_end') {
+      return { valid: false, reason: 'Market buyer sales are not allowed during the end phase — only private buyers' };
+    }
     const marketBuyer = state.market.find((b) => b.cardId === buyerCardId);
     if (!marketBuyer) {
       return { valid: false, reason: 'Buyer not in market' };
