@@ -13,7 +13,7 @@ import { GameLog } from '@/components/game/GameLog';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { ActiveBuyer, PlayerState } from '@/lib/game/types';
-import { getBuyerDef } from '@/lib/game/engine';
+import { getBuyerDef, canRemoveBuyer } from '@/lib/game/engine';
 import { RulebookModal } from '@/components/game/RulebookModal';
 
 export default function GamePage() {
@@ -149,6 +149,10 @@ export default function GamePage() {
     completedDealIds: [],
   }));
 
+  const impossibleBuyerIds = gameState.market
+    .filter((b) => canRemoveBuyer(gameState, b.cardId))
+    .map((b) => b.cardId);
+
   return (
     <main className="min-h-screen flex flex-col p-3 gap-3">
       {/* Scoring track */}
@@ -213,6 +217,7 @@ export default function GamePage() {
             onDrawPrivateBuyer={handleDrawPrivateBuyer}
             onRemoveBuyer={handleRemoveBuyer}
             privateBuyers={myPrivateBuyers}
+            impossibleBuyerIds={impossibleBuyerIds}
           />
         </div>
 

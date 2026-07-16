@@ -16,6 +16,7 @@ interface BuyerMarketProps {
   onDrawPrivateBuyer: () => void;
   onRemoveBuyer: (buyerCardId: string) => void;
   privateBuyers?: ActiveBuyer[];
+  impossibleBuyerIds?: string[];
   tutorialHighlightBuyerId?: string;
   tutorialHighlightDrawBuyer?: boolean;
   tutorialHighlightRemoveBuyerId?: string;
@@ -32,6 +33,7 @@ export function BuyerMarket({
   onDrawPrivateBuyer,
   onRemoveBuyer,
   privateBuyers = [],
+  impossibleBuyerIds = [],
   tutorialHighlightBuyerId,
   tutorialHighlightDrawBuyer,
   tutorialHighlightRemoveBuyerId,
@@ -56,6 +58,7 @@ export function BuyerMarket({
           const def = getBuyerDef(activeBuyer.cardId);
           const isTutorialSell = tutorialHighlightBuyerId === activeBuyer.cardId;
           const isTutorialRemove = tutorialHighlightRemoveBuyerId === activeBuyer.cardId;
+          const isImpossible = impossibleBuyerIds.includes(activeBuyer.cardId) || isTutorialRemove;
           return (
             <div
               key={activeBuyer.cardId}
@@ -71,17 +74,17 @@ export function BuyerMarket({
                 playerSupply={isMyTurn ? playerSupply : []}
                 onSell={(dealSells) => onSell(activeBuyer.cardId, dealSells)}
               />
-              {/* Remove buyer button */}
+              {/* Remove button: always visible but highlighted red when the buyer is impossible */}
               {isMyTurn && (
                 <button
-                  onClick={() => onRemoveBuyer(activeBuyer.cardId)}
+                  onClick={() => isImpossible ? onRemoveBuyer(activeBuyer.cardId) : undefined}
                   className={cn(
-                    'absolute top-2 right-2 text-xs transition-colors',
-                    isTutorialRemove
-                      ? 'text-red-400 font-bold scale-125'
-                      : 'text-gray-500 hover:text-red-400',
+                    'absolute top-2 right-2 text-xs leading-none transition-all duration-150',
+                    isImpossible
+                      ? 'px-1.5 py-0.5 rounded border border-red-500 text-red-400 hover:bg-red-900/40 cursor-pointer'
+                      : 'text-gray-700 cursor-default select-none',
                   )}
-                  title="Remove impossible buyer"
+                  title={isImpossible ? 'All remaining deals are impossible — click to replace' : 'Cannot remove: some deals are still possible'}
                 >
                   ✕
                 </button>

@@ -247,6 +247,10 @@ export default function TutorialPage() {
     completedDealIds: [],
   }));
 
+  const impossibleBuyerIds = gameState.market
+    .filter((b) => canRemoveBuyer(gameState, b.cardId))
+    .map((b) => b.cardId);
+
   const boardHighlight = currentStep.highlight === 'board';
   const marketHighlight = currentStep.highlight === 'market';
   const actionBarHighlight = currentStep.highlight === 'action-bar';
@@ -351,6 +355,7 @@ export default function TutorialPage() {
             tutorialHighlightBuyerId={tutorialHighlightBuyerId}
             tutorialHighlightDrawBuyer={tutorialHighlightDrawBuyer}
             tutorialHighlightRemoveBuyerId={tutorialHighlightRemoveBuyerId}
+            impossibleBuyerIds={impossibleBuyerIds}
           />
         </div>
 

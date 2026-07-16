@@ -606,14 +606,19 @@ export function applyRemoveBuyer(
   state: GameState,
   buyerCardId: string,
 ): GameState {
-  let newMarket = state.market.filter((b) => b.cardId !== buyerCardId);
   let newDeck = [...state.buyerDeck];
 
-  // Replace from deck
-  if (newDeck.length > 0) {
-    const [nextId, ...restDeck] = newDeck;
-    newDeck = restDeck;
-    newMarket = [...newMarket, { cardId: nextId, completedDealIds: [] }];
+  // Replace the removed buyer at the same position so the layout doesn't shift.
+  const newMarket: typeof state.market = [];
+  for (const b of state.market) {
+    if (b.cardId !== buyerCardId) {
+      newMarket.push(b);
+    } else if (newDeck.length > 0) {
+      const [nextId, ...restDeck] = newDeck;
+      newDeck = restDeck;
+      newMarket.push({ cardId: nextId, completedDealIds: [] });
+    }
+    // else deck is empty — slot disappears
   }
 
   return {
