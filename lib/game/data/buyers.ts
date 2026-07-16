@@ -4,6 +4,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b1: 2blue=4, 1yellow=3, 1blue=1, 1green=1
   {
     id: 'b1',
+    name: 'Vega Trading',
     deals: [
       { id: 'b1-A', label: 'A', requirements: [{ color: 'blue', count: 2 }], credits: 4 },
       { id: 'b1-B', label: 'B', requirements: [{ color: 'yellow', count: 1 }], credits: 3 },
@@ -11,9 +12,10 @@ export const BUYER_CARDS: BuyerCardDef[] = [
       { id: 'b1-D', label: 'D', requirements: [{ color: 'green', count: 1 }], credits: 1 },
     ],
   },
-  // b2: 4red=22, 1white=3, 1blue=2
+  // b2: 3red=22, 1white=3, 1blue=2
   {
     id: 'b2',
+    name: 'Korreth Industries',
     deals: [
       { id: 'b2-A', label: 'A', requirements: [{ color: 'red', count: 3 }], credits: 22 },
       { id: 'b2-B', label: 'B', requirements: [{ color: 'white', count: 1 }], credits: 3 },
@@ -23,6 +25,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b3: 1yellow+1white+1red=18, 1red=4, 1blue=2
   {
     id: 'b3',
+    name: 'Tri-Star Exchange',
     deals: [
       {
         id: 'b3-A',
@@ -41,6 +44,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b4: 2yellow=7, 1black=7, 1white=3, 1green=2
   {
     id: 'b4',
+    name: 'Solarion Guild',
     deals: [
       { id: 'b4-A', label: 'A', requirements: [{ color: 'yellow', count: 2 }], credits: 7 },
       { id: 'b4-B', label: 'B', requirements: [{ color: 'black', count: 1 }], credits: 7 },
@@ -51,6 +55,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b5: 1blue+1green+1yellow=7, 1green=3, 1green=2
   {
     id: 'b5',
+    name: 'Verdant Pact',
     deals: [
       {
         id: 'b5-A',
@@ -69,6 +74,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b6: 2green=5, 1red=5, 1green=3, 1yellow=2
   {
     id: 'b6',
+    name: 'Mossglen Co.',
     deals: [
       { id: 'b6-A', label: 'A', requirements: [{ color: 'green', count: 2 }], credits: 5 },
       { id: 'b6-B', label: 'B', requirements: [{ color: 'red', count: 1 }], credits: 5 },
@@ -79,6 +85,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b7: 2white=10, 1red=6, 1red=4, 1blue=1
   {
     id: 'b7',
+    name: 'Alabaster Trust',
     deals: [
       { id: 'b7-A', label: 'A', requirements: [{ color: 'white', count: 2 }], credits: 10 },
       { id: 'b7-B', label: 'B', requirements: [{ color: 'red', count: 1 }], credits: 6 },
@@ -89,6 +96,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b8: 2white=11, 1black=6, 1red=5, 1red=5
   {
     id: 'b8',
+    name: 'Onyx Partners',
     deals: [
       { id: 'b8-A', label: 'A', requirements: [{ color: 'white', count: 2 }], credits: 11 },
       { id: 'b8-B', label: 'B', requirements: [{ color: 'black', count: 1 }], credits: 6 },
@@ -99,6 +107,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b9: 3yellow=12, 1white=5, 1red=5
   {
     id: 'b9',
+    name: 'Crimson Accord',
     deals: [
       { id: 'b9-A', label: 'A', requirements: [{ color: 'yellow', count: 3 }], credits: 12 },
       { id: 'b9-B', label: 'B', requirements: [{ color: 'white', count: 1 }], credits: 5 },
@@ -108,6 +117,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b10: 1blue+1yellow+1white=10, 1black=6, 1yellow=4
   {
     id: 'b10',
+    name: 'Nexus Combine',
     deals: [
       {
         id: 'b10-A',
@@ -126,6 +136,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b11: 1black=6, 2green=4, 1yellow=4, 1blue=1
   {
     id: 'b11',
+    name: 'Shadowmere Co.',
     deals: [
       { id: 'b11-A', label: 'A', requirements: [{ color: 'black', count: 1 }], credits: 6 },
       { id: 'b11-B', label: 'B', requirements: [{ color: 'green', count: 2 }], credits: 4 },
@@ -133,9 +144,10 @@ export const BUYER_CARDS: BuyerCardDef[] = [
       { id: 'b11-D', label: 'D', requirements: [{ color: 'blue', count: 1 }], credits: 1 },
     ],
   },
-  // b12: 1white=5, 4blue=3, 1yellow=3
+  // b12: 1white=5, 3blue=3, 1yellow=3
   {
     id: 'b12',
+    name: 'Stellaris Union',
     deals: [
       { id: 'b12-A', label: 'A', requirements: [{ color: 'white', count: 1 }], credits: 5 },
       { id: 'b12-B', label: 'B', requirements: [{ color: 'blue', count: 3 }], credits: 3 },
@@ -145,6 +157,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b13: 1black=7, 1red=5, 1blue+1yellow=4, 1white=4
   {
     id: 'b13',
+    name: 'Darkwing Cartel',
     deals: [
       { id: 'b13-A', label: 'A', requirements: [{ color: 'black', count: 1 }], credits: 7 },
       { id: 'b13-B', label: 'B', requirements: [{ color: 'red', count: 1 }], credits: 5 },
@@ -163,6 +176,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b14: 1green+1yellow+1red=16, 1green=2, 1yellow=2
   {
     id: 'b14',
+    name: 'Trifecta Alliance',
     deals: [
       {
         id: 'b14-A',
@@ -181,6 +195,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b15: 2green=5, 1blue=2, 1yellow=2, 1blue=1
   {
     id: 'b15',
+    name: 'Luminar Markets',
     deals: [
       { id: 'b15-A', label: 'A', requirements: [{ color: 'green', count: 2 }], credits: 5 },
       { id: 'b15-B', label: 'B', requirements: [{ color: 'blue', count: 1 }], credits: 2 },
@@ -191,6 +206,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b16: 2white=10, 1green=2, 1blue=1, 1blue=1
   {
     id: 'b16',
+    name: 'Pearlgate Co.',
     deals: [
       { id: 'b16-A', label: 'A', requirements: [{ color: 'white', count: 2 }], credits: 10 },
       { id: 'b16-B', label: 'B', requirements: [{ color: 'green', count: 1 }], credits: 2 },
@@ -198,9 +214,10 @@ export const BUYER_CARDS: BuyerCardDef[] = [
       { id: 'b16-D', label: 'D', requirements: [{ color: 'blue', count: 1 }], credits: 1 },
     ],
   },
-  // b17: 1white=4, 4blue=3, 1blue=2
+  // b17: 1white=4, 3blue=3, 1blue=2
   {
     id: 'b17',
+    name: 'Zenith Bureau',
     deals: [
       { id: 'b17-A', label: 'A', requirements: [{ color: 'white', count: 1 }], credits: 4 },
       { id: 'b17-B', label: 'B', requirements: [{ color: 'blue', count: 3 }], credits: 3 },
@@ -210,6 +227,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b18: 2green=6, 1red=5, 1white=4, 1yellow=2
   {
     id: 'b18',
+    name: 'Viridex Imports',
     deals: [
       { id: 'b18-A', label: 'A', requirements: [{ color: 'green', count: 2 }], credits: 6 },
       { id: 'b18-B', label: 'B', requirements: [{ color: 'red', count: 1 }], credits: 5 },
@@ -220,6 +238,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b19: 1white=4, 1green=3, 1green=2, 2blue=1
   {
     id: 'b19',
+    name: 'Opaline Exchange',
     deals: [
       { id: 'b19-A', label: 'A', requirements: [{ color: 'white', count: 1 }], credits: 4 },
       { id: 'b19-B', label: 'B', requirements: [{ color: 'green', count: 1 }], credits: 3 },
@@ -230,6 +249,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b20: 1green+1yellow+1white=12, 1blue=2, 1blue=1
   {
     id: 'b20',
+    name: 'Prism Authority',
     deals: [
       {
         id: 'b20-A',
@@ -248,6 +268,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b21: 1blue+1green+1red=12, 1blue=1, 1blue=1
   {
     id: 'b21',
+    name: 'Comet Brokers',
     deals: [
       {
         id: 'b21-A',
@@ -266,6 +287,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b22: 1black=6, 1blue+1white=5, 1yellow=4, 1yellow=3
   {
     id: 'b22',
+    name: 'Eclipse Syndicate',
     deals: [
       { id: 'b22-A', label: 'A', requirements: [{ color: 'black', count: 1 }], credits: 6 },
       {
@@ -284,6 +306,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b23: 1blue+2yellow=12, 1black=6, 1white=3
   {
     id: 'b23',
+    name: 'Azure Coalition',
     deals: [
       {
         id: 'b23-A',
@@ -301,6 +324,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b24: 2yellow=7, 1red=4, 1blue=2, 1green=2
   {
     id: 'b24',
+    name: 'Helio Ventures',
     deals: [
       { id: 'b24-A', label: 'A', requirements: [{ color: 'yellow', count: 2 }], credits: 7 },
       { id: 'b24-B', label: 'B', requirements: [{ color: 'red', count: 1 }], credits: 4 },
@@ -308,9 +332,10 @@ export const BUYER_CARDS: BuyerCardDef[] = [
       { id: 'b24-D', label: 'D', requirements: [{ color: 'green', count: 1 }], credits: 2 },
     ],
   },
-  // b25: 4blue=3, 1green=3, 1blue=1
+  // b25: 3blue=3, 1green=3, 1blue=1
   {
     id: 'b25',
+    name: 'Cyan Docks',
     deals: [
       { id: 'b25-A', label: 'A', requirements: [{ color: 'blue', count: 3 }], credits: 3 },
       { id: 'b25-B', label: 'B', requirements: [{ color: 'green', count: 1 }], credits: 3 },
@@ -320,6 +345,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b26: 1white=5, 1red=5, 2green=4, 1yellow=3
   {
     id: 'b26',
+    name: 'Spectrum Guild',
     deals: [
       { id: 'b26-A', label: 'A', requirements: [{ color: 'white', count: 1 }], credits: 5 },
       { id: 'b26-B', label: 'B', requirements: [{ color: 'red', count: 1 }], credits: 5 },
@@ -330,6 +356,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b27: 1black=6, 2green=4, 1white=4, 1blue=2
   {
     id: 'b27',
+    name: 'Void Merchants',
     deals: [
       { id: 'b27-A', label: 'A', requirements: [{ color: 'black', count: 1 }], credits: 6 },
       { id: 'b27-B', label: 'B', requirements: [{ color: 'green', count: 2 }], credits: 4 },
@@ -337,9 +364,10 @@ export const BUYER_CARDS: BuyerCardDef[] = [
       { id: 'b27-D', label: 'D', requirements: [{ color: 'blue', count: 1 }], credits: 2 },
     ],
   },
-  // b28: 4green=10, 1white=3, 1blue=1
+  // b28: 3green=10, 1white=3, 1blue=1
   {
     id: 'b28',
+    name: 'Chloro Corp.',
     deals: [
       { id: 'b28-A', label: 'A', requirements: [{ color: 'green', count: 3 }], credits: 10 },
       { id: 'b28-B', label: 'B', requirements: [{ color: 'white', count: 1 }], credits: 3 },
@@ -349,6 +377,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b29: 1green=3, 2blue=2, 1blue=1, 1green=1
   {
     id: 'b29',
+    name: 'Aqua Post',
     deals: [
       { id: 'b29-A', label: 'A', requirements: [{ color: 'green', count: 1 }], credits: 3 },
       { id: 'b29-B', label: 'B', requirements: [{ color: 'blue', count: 2 }], credits: 2 },
@@ -359,6 +388,7 @@ export const BUYER_CARDS: BuyerCardDef[] = [
   // b30: 1green+1yellow+1white=15, 1black=5, 1blue=1
   {
     id: 'b30',
+    name: 'Harmonia Ltd.',
     deals: [
       {
         id: 'b30-A',

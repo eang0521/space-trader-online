@@ -114,12 +114,10 @@ export function BuyerCard({
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-          {isPrivate ? 'Private Buyer' : 'Buyer'}
-        </span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-gray-100 truncate">{def.name}</span>
         {isPrivate && (
-          <span className="text-xs bg-purple-800 text-purple-200 px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-purple-800 text-purple-200 px-2 py-0.5 rounded-full shrink-0">
             Private
           </span>
         )}

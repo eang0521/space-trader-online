@@ -168,7 +168,7 @@ export async function POST(
           );
         }
         newState = applyRemoveBuyer(state, action.buyerCardId);
-        newState = addLog(newState, playerIndex, `removed an impossible buyer from the market`);
+        newState = addLog(newState, playerIndex, 'removed an impossible buyer', 'remove');
         break;
       }
 
@@ -185,7 +185,7 @@ export async function POST(
         if (state.currentPlayerIndex !== playerIndex) {
           return NextResponse.json({ error: 'Not your turn' }, { status: 403 });
         }
-        newState = addLog(state, playerIndex, 'ended their turn');
+        newState = addLog(state, playerIndex, 'ended their turn', 'end_turn');
         newState = advanceTurn(newState);
         break;
       }

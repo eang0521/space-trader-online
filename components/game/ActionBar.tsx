@@ -8,9 +8,10 @@ interface ActionBarProps {
   onEndTurn: () => void;
   gameStatus: string;
   currentPlayerName?: string;
+  tutorialHighlightEndTurn?: boolean;
 }
 
-export function ActionBar({ actionsRemaining, isMyTurn, onEndTurn, gameStatus, currentPlayerName }: ActionBarProps) {
+export function ActionBar({ actionsRemaining, isMyTurn, onEndTurn, gameStatus, currentPlayerName, tutorialHighlightEndTurn }: ActionBarProps) {
   if (gameStatus === 'placement') {
     return (
       <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 flex flex-col gap-3">
@@ -62,9 +63,16 @@ export function ActionBar({ actionsRemaining, isMyTurn, onEndTurn, gameStatus, c
         </div>
       ) : (
         <div className="flex items-center justify-end border-t border-gray-800 pt-2">
-          <Button variant="secondary" size="sm" onClick={onEndTurn}>
-            End Turn
-          </Button>
+          <div
+            className={cn(
+              'rounded-lg transition-all duration-200',
+              tutorialHighlightEndTurn && 'ring-4 ring-cyan-400 shadow-[0_0_16px_4px_rgba(34,211,238,0.45)] animate-pulse',
+            )}
+          >
+            <Button variant="secondary" size="sm" onClick={onEndTurn}>
+              End Turn
+            </Button>
+          </div>
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import { ActiveBuyer, GameStatus, ResourceCube } from '@/lib/game/types';
 import { getBuyerDef } from '@/lib/game/engine';
 import { BuyerCard } from './BuyerCard';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 
 interface BuyerMarketProps {
   market: ActiveBuyer[];
@@ -15,6 +16,9 @@ interface BuyerMarketProps {
   onDrawPrivateBuyer: () => void;
   onRemoveBuyer: (buyerCardId: string) => void;
   privateBuyers?: ActiveBuyer[];
+  tutorialHighlightBuyerId?: string;
+  tutorialHighlightDrawBuyer?: boolean;
+  tutorialHighlightRemoveBuyerId?: string;
 }
 
 export function BuyerMarket({
@@ -28,6 +32,9 @@ export function BuyerMarket({
   onDrawPrivateBuyer,
   onRemoveBuyer,
   privateBuyers = [],
+  tutorialHighlightBuyerId,
+  tutorialHighlightDrawBuyer,
+  tutorialHighlightRemoveBuyerId,
 }: BuyerMarketProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -47,8 +54,17 @@ export function BuyerMarket({
       <div className="flex flex-col gap-2">
         {market.map((activeBuyer) => {
           const def = getBuyerDef(activeBuyer.cardId);
+          const isTutorialSell = tutorialHighlightBuyerId === activeBuyer.cardId;
+          const isTutorialRemove = tutorialHighlightRemoveBuyerId === activeBuyer.cardId;
           return (
-            <div key={activeBuyer.cardId} className="relative">
+            <div
+              key={activeBuyer.cardId}
+              className={cn(
+                'relative rounded-xl transition-all duration-200',
+                isTutorialSell && 'ring-4 ring-cyan-400 shadow-[0_0_16px_4px_rgba(34,211,238,0.45)] animate-pulse',
+                isTutorialRemove && 'ring-4 ring-red-400 shadow-[0_0_16px_4px_rgba(248,113,113,0.45)] animate-pulse',
+              )}
+            >
               <BuyerCard
                 buyer={activeBuyer}
                 def={def}
@@ -59,7 +75,12 @@ export function BuyerMarket({
               {isMyTurn && (
                 <button
                   onClick={() => onRemoveBuyer(activeBuyer.cardId)}
-                  className="absolute top-2 right-2 text-xs text-gray-500 hover:text-red-400 transition-colors"
+                  className={cn(
+                    'absolute top-2 right-2 text-xs transition-colors',
+                    isTutorialRemove
+                      ? 'text-red-400 font-bold scale-125'
+                      : 'text-gray-500 hover:text-red-400',
+                  )}
                   title="Remove impossible buyer"
                 >
                   ✕
@@ -76,22 +97,29 @@ export function BuyerMarket({
       {/* Draw private buyer */}
       {isMyTurn && (
         <div className="border-t border-gray-800 pt-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            disabled={actionsRemaining < 3 || deckCount === 0}
-            onClick={onDrawPrivateBuyer}
-            title={
-              actionsRemaining < 3
-                ? 'Costs 3 actions (must have 3 remaining)'
-                : deckCount === 0
-                ? 'Deck is empty'
-                : 'Draw a private buyer card (costs 3 actions)'
-            }
+          <div
+            className={cn(
+              'rounded-lg transition-all duration-200',
+              tutorialHighlightDrawBuyer && 'ring-4 ring-cyan-400 shadow-[0_0_16px_4px_rgba(34,211,238,0.45)] animate-pulse',
+            )}
           >
-            Draw Private Buyer (3 actions)
-          </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              disabled={actionsRemaining < 3 || deckCount === 0}
+              onClick={onDrawPrivateBuyer}
+              title={
+                actionsRemaining < 3
+                  ? 'Costs 3 actions (must have 3 remaining)'
+                  : deckCount === 0
+                  ? 'Deck is empty'
+                  : 'Draw a private buyer card (costs 3 actions)'
+              }
+            >
+              Draw Private Buyer (3 actions)
+            </Button>
+          </div>
         </div>
       )}
 

@@ -142,6 +142,9 @@ export default function LandingPage() {
           <Button size="lg" variant="secondary" onClick={() => handleOpenModal('join')}>
             Join Game
           </Button>
+          <Button size="lg" variant="secondary" onClick={() => router.push('/tutorial')}>
+            Tutorial
+          </Button>
           <Button size="lg" variant="ghost" onClick={() => setRulebookOpen(true)}>
             How to Play
           </Button>

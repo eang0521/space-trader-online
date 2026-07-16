@@ -31,6 +31,7 @@ export interface PlanetCell {
 
 export interface BuyerCardDef {
   id: string;
+  name: string;
   deals: DealDef[];
 }
 
@@ -65,12 +66,26 @@ export interface PlayerState {
   isHost: boolean;
 }
 
+export type LogEntryKind =
+  | 'move'
+  | 'gather'
+  | 'sell'
+  | 'draw'
+  | 'remove'
+  | 'placement'
+  | 'end_turn'
+  | 'system';
+
 export interface GameLogEntry {
   id: string;
   playerColor: PlayerColor;
   playerName: string;
   message: string;
   timestamp: string;
+  // Optional enrichment — absent on entries from older game states
+  kind?: LogEntryKind;
+  turnNumber?: number;
+  resource?: ResourceColor; // colour gathered, for inline rendering
 }
 
 export interface GameState {

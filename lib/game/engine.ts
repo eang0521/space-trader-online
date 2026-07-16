@@ -4,6 +4,7 @@ import {
   ResourceCube,
   ResourceColor,
   GameLogEntry,
+  LogEntryKind,
 } from './types';
 import { PLANET_CARDS } from './data/planets';
 import { BUYER_CARDS } from './data/buyers';
@@ -149,11 +150,8 @@ export function applyMove(
     actionsRemaining: state.actionsRemaining - cost,
   };
 
-  return addLog(
-    newState,
-    playerIndex,
-    `moved to ${destDef.name} (cost ${cost}: ${originDef.rings} + ${destDef.rings} rings)`,
-  );
+  const costLabel = cost === 0 ? 'free' : `${cost} action${cost !== 1 ? 's' : ''}`;
+  return addLog(newState, playerIndex, `moved to ${destDef.name} (${costLabel})`, 'move');
 }
 
 // ---------------------------------------------------------------------------
@@ -226,7 +224,7 @@ export function applyPlacement(
     players: newPlayers,
   };
 
-  newState = addLog(newState, playerIndex, `placed ship on ${planetDef.name}`);
+  newState = addLog(newState, playerIndex, `placed ship on ${planetDef.name}`, 'placement');
 
   const placementOrder = state.placementOrder ?? [];
   const nextIndex = (state.placementIndex ?? 0) + 1;
@@ -328,7 +326,7 @@ export function applyGather(
   };
 
   const def = getPlanetDef(cell.cardId);
-  newState = addLog(newState, playerIndex, `gathered ${cube.color} from ${def.name}`);
+  newState = addLog(newState, playerIndex, `from ${def.name}`, 'gather', cube.color);
 
   // Check game end condition
   if (checkGameEndCondition(newState)) {
@@ -337,11 +335,7 @@ export function applyGather(
       status: 'game_end',
       gameEndTriggeredByIndex: playerIndex,
     };
-    newState = addLog(
-      newState,
-      playerIndex,
-      'triggered game end! Only 1 planet remains.',
-    );
+    newState = addLog(newState, playerIndex, 'triggered game end — only 1 planet remains!', 'system');
   }
 
   return newState;
@@ -514,10 +508,9 @@ export function applySell(
     newState = { ...newState, market: newMarket, buyerDeck: newDeck };
   }
 
-  const dealText =
-    dealLabels.length === 1 ? `deal ${dealLabels[0]}` : `deals ${dealLabels.join(', ')}`;
-  const buyerText = isPrivate ? 'private buyer' : buyerCardId;
-  return addLog(newState, playerIndex, `sold ${dealText} to ${buyerText} for ${totalCredits} credits`);
+  const dealText = dealLabels.join('+');
+  const buyerText = isPrivate ? `private buyer (${buyerDef.name})` : buyerDef.name;
+  return addLog(newState, playerIndex, `sold ${dealText} to ${buyerText} · ${totalCredits}c`, 'sell');
 }
 
 // ---------------------------------------------------------------------------
@@ -564,7 +557,7 @@ export function applyDrawPrivateBuyer(
     actionsRemaining: state.actionsRemaining - 3,
   };
 
-  newState = addLog(newState, playerIndex, 'drew a private buyer card');
+  newState = addLog(newState, playerIndex, 'drew a private buyer', 'draw');
   return newState;
 }
 
@@ -745,6 +738,8 @@ export function addLog(
   state: GameState,
   playerIndex: number,
   message: string,
+  kind: LogEntryKind = 'system',
+  resource?: ResourceColor,
 ): GameState {
   const player = state.players[playerIndex];
   if (!player) return state;
@@ -755,6 +750,9 @@ export function addLog(
     playerName: player.displayName,
     message,
     timestamp: new Date().toISOString(),
+    kind,
+    turnNumber: state.turnNumber,
+    resource,
   };
 
   return {

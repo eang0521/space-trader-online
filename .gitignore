@@ -42,3 +42,5 @@ next-env.d.ts
 
 # source card images (working files; app assets are in public/planets/)
 /card-images/
+
+.vercel

@@ -15,6 +15,12 @@ interface PlanetCardProps {
   moveCost?: number;
   onClick?: () => void;
   onSlotClick?: (slotId: string) => void;
+  /** Tutorial: this is the exact planet the player must move to */
+  isTutorialTarget?: boolean;
+  /** Tutorial: this planet is where the player must gather from */
+  isTutorialGather?: boolean;
+  /** Tutorial: point this planet out for explanation (amber, no move implication) */
+  isTutorialCallout?: boolean;
 }
 
 function RingIndicators({ count }: { count: number }) {
@@ -70,6 +76,9 @@ export function PlanetCard({
   moveCost,
   onClick,
   onSlotClick,
+  isTutorialTarget,
+  isTutorialGather,
+  isTutorialCallout,
 }: PlanetCardProps) {
   const gradient = PLANET_GRADIENTS[Math.min(def.rings, 3)];
 
@@ -81,10 +90,13 @@ export function PlanetCard({
       className={cn(
         'relative w-full aspect-square rounded-xl border-2 overflow-hidden',
         `bg-gradient-to-br ${gradient}`,
-        isSelected && 'border-white shadow-lg shadow-white/20',
-        isTargetable && !isSelected && 'border-yellow-400 shadow-md shadow-yellow-400/30 cursor-pointer',
-        isCurrentPlayerHere && !isSelected && !isTargetable && 'border-indigo-400',
-        !isSelected && !isTargetable && !isCurrentPlayerHere && 'border-gray-700',
+        isTutorialTarget && 'border-cyan-400 shadow-[0_0_20px_6px_rgba(34,211,238,0.5)] cursor-pointer',
+        isTutorialGather && !isTutorialTarget && 'border-cyan-400',
+        isTutorialCallout && !isTutorialTarget && !isTutorialGather && 'border-amber-400 shadow-[0_0_14px_4px_rgba(251,191,36,0.4)]',
+        isSelected && !isTutorialTarget && !isTutorialGather && !isTutorialCallout && 'border-white shadow-lg shadow-white/20',
+        isTargetable && !isSelected && !isTutorialTarget && !isTutorialGather && !isTutorialCallout && 'border-yellow-400 shadow-md shadow-yellow-400/30 cursor-pointer',
+        isCurrentPlayerHere && !isSelected && !isTargetable && !isTutorialTarget && !isTutorialGather && !isTutorialCallout && 'border-indigo-400',
+        !isSelected && !isTargetable && !isCurrentPlayerHere && !isTutorialTarget && !isTutorialGather && !isTutorialCallout && 'border-gray-700',
         'transition-all duration-150',
       )}
     >
@@ -145,7 +157,8 @@ export function PlanetCard({
             className={cn(
               'absolute w-[27%] h-[27%] flex items-center justify-center rounded-sm',
               SLOT_CLASSES[slot.position],
-              canGather && 'cursor-pointer ring-2 ring-white/80',
+              canGather && !isTutorialGather && 'cursor-pointer ring-2 ring-white/80',
+              canGather && isTutorialGather && 'cursor-pointer ring-2 ring-cyan-400 shadow-[0_0_8px_2px_rgba(34,211,238,0.6)]',
             )}
             title={canGather ? `Gather ${cube.color}` : cube.color}
           >
@@ -155,8 +168,18 @@ export function PlanetCard({
       })}
 
       {/* Move target glow */}
-      {isTargetable && (
+      {isTargetable && !isTutorialTarget && (
         <div className="absolute inset-0 rounded-xl ring-2 ring-yellow-400/50 animate-pulse pointer-events-none" />
+      )}
+
+      {/* Tutorial target glow — bright cyan pulse */}
+      {isTutorialTarget && (
+        <div className="absolute inset-0 rounded-xl ring-4 ring-cyan-400 animate-pulse pointer-events-none" />
+      )}
+
+      {/* Tutorial callout — amber pulse, informational only */}
+      {isTutorialCallout && !isTutorialTarget && (
+        <div className="absolute inset-0 rounded-xl ring-4 ring-amber-400/70 animate-pulse pointer-events-none" />
       )}
     </motion.div>
   );

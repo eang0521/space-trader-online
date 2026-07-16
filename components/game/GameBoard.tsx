@@ -8,6 +8,9 @@ interface GameBoardProps {
   currentPlayer: PlayerState | null;
   onPlanetClick: (row: number, col: number) => void;
   onSlotClick?: (row: number, col: number, slotId: string) => void;
+  tutorialTargetPlanet?: { row: number; col: number };
+  tutorialGatherPlanet?: { row: number; col: number };
+  tutorialCalloutPlanet?: { row: number; col: number };
 }
 
 const EDGE_SET = new Set<string>(
@@ -46,7 +49,7 @@ function isValidMoveTarget(
   return originRings + destRings <= state.actionsRemaining;
 }
 
-export function GameBoard({ gameState, currentPlayer, onPlanetClick, onSlotClick }: GameBoardProps) {
+export function GameBoard({ gameState, currentPlayer, onPlanetClick, onSlotClick, tutorialTargetPlanet, tutorialGatherPlanet, tutorialCalloutPlanet }: GameBoardProps) {
   return (
     <div className="w-full">
       <div className="grid grid-cols-4 gap-2">
@@ -90,6 +93,19 @@ export function GameBoard({ gameState, currentPlayer, onPlanetClick, onSlotClick
               }
             }
 
+            const isTutorialTarget =
+              tutorialTargetPlanet != null &&
+              tutorialTargetPlanet.row === r &&
+              tutorialTargetPlanet.col === c;
+            const isTutorialGather =
+              tutorialGatherPlanet != null &&
+              tutorialGatherPlanet.row === r &&
+              tutorialGatherPlanet.col === c;
+            const isTutorialCallout =
+              tutorialCalloutPlanet != null &&
+              tutorialCalloutPlanet.row === r &&
+              tutorialCalloutPlanet.col === c;
+
             return (
               <PlanetCard
                 key={cell.cardId}
@@ -107,6 +123,9 @@ export function GameBoard({ gameState, currentPlayer, onPlanetClick, onSlotClick
                     ? (slotId) => onSlotClick(r, c, slotId)
                     : undefined
                 }
+                isTutorialTarget={isTutorialTarget}
+                isTutorialGather={isTutorialGather}
+                isTutorialCallout={isTutorialCallout}
               />
             );
           }),
