@@ -17,23 +17,62 @@ import {
   isValidPlacement,
   applyPlacement,
 } from '@/lib/game/engine';
-import { runBotTurn, autoBotPlacement } from '@/lib/game/bot';
+import {
+  autoBotPlacement,
+  planBotTurn,
+  applyBotAction,
+  ruleBasedValueFunction,
+} from '@/lib/game/bot';
 
-// After any action that could hand control to a bot, run all consecutive bot turns.
-function advanceBotTurns(state: GameState): GameState {
-  let s = state;
+const BOT_ACTION_DELAY_MS = 750;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+// Persist a game state snapshot to the database.
+type PersistFn = (state: GameState) => Promise<void>;
+
+// Run all consecutive bot turns, persisting each individual action with a delay
+// so the client can watch the moves unfold via realtime.
+async function runBotTurnsAnimated(
+  persist: PersistFn,
+  initialState: GameState,
+): Promise<GameState> {
+  let s = initialState;
+
   for (let guard = 0; guard < 20; guard++) {
     const currentPlayer = s.players[s.currentPlayerIndex];
     if (!currentPlayer?.isBot) break;
 
     if (s.status === 'placement') {
+      await sleep(BOT_ACTION_DELAY_MS);
       s = autoBotPlacement(s, s.currentPlayerIndex);
+      await persist(s);
     } else if (s.status === 'playing' || s.status === 'game_end') {
-      s = runBotTurn(s, s.currentPlayerIndex);
+      const botIndex = s.currentPlayerIndex;
+      const actions = planBotTurn(s, botIndex, { valueFunction: ruleBasedValueFunction });
+
+      for (const action of actions) {
+        await sleep(BOT_ACTION_DELAY_MS);
+        try {
+          s = applyBotAction(s, botIndex, action);
+          await persist(s);
+        } catch {
+          break;
+        }
+      }
+
+      // End the bot's turn
+      await sleep(BOT_ACTION_DELAY_MS);
+      s = addLog(s, botIndex, 'ended their turn', 'end_turn');
+      s = advanceTurn(s);
+      await persist(s);
     } else {
       break;
     }
   }
+
   return s;
 }
 
@@ -54,6 +93,16 @@ export async function POST(
     }
 
     const supabase = await createClient();
+
+    const persist: PersistFn = async (state) => {
+      await supabase
+        .from('games')
+        .update({
+          status: state.status === 'placement' ? 'playing' : state.status,
+          state,
+        })
+        .eq('id', gameId);
+    };
 
     // Fetch current game state
     const { data: game, error: gameError } = await supabase
@@ -133,7 +182,6 @@ export async function POST(
       }
 
       case 'SELL': {
-        // Check if it's a private buyer sell
         const player = state.players[playerIndex];
         const isPrivate = player.privateBuyers.includes(action.buyerCardId);
 
@@ -197,7 +245,13 @@ export async function POST(
           return NextResponse.json({ error: validation.reason }, { status: 400 });
         }
         newState = applyPlacement(state, playerIndex, action.row, action.col);
-        newState = advanceBotTurns(newState);
+        // If a bot is next to place (or the game just started playing with a bot),
+        // persist the current state first then animate the bot's moves.
+        if (newState.players[newState.currentPlayerIndex]?.isBot) {
+          await persist(newState);
+          await runBotTurnsAnimated(persist, newState);
+          return NextResponse.json({ success: true });
+        }
         break;
       }
 
@@ -207,7 +261,12 @@ export async function POST(
         }
         newState = addLog(state, playerIndex, 'ended their turn', 'end_turn');
         newState = advanceTurn(newState);
-        newState = advanceBotTurns(newState);
+        // Animate the bot's turn before responding
+        if (newState.players[newState.currentPlayerIndex]?.isBot) {
+          await persist(newState);
+          await runBotTurnsAnimated(persist, newState);
+          return NextResponse.json({ success: true });
+        }
         break;
       }
 
@@ -216,20 +275,8 @@ export async function POST(
       }
     }
 
-    // Persist updated state
-    const { error: updateError } = await supabase
-      .from('games')
-      .update({
-        status: newState.status === 'placement' ? 'playing' : newState.status,
-        state: newState,
-      })
-      .eq('id', gameId);
-
-    if (updateError) {
-      console.error('State update error:', updateError);
-      return NextResponse.json({ error: 'Failed to save game state' }, { status: 500 });
-    }
-
+    // Normal (non-bot) persist
+    await persist(newState);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('POST /api/games/[id]/action error:', err);

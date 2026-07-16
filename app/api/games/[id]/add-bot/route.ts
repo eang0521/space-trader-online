@@ -4,6 +4,14 @@ import { PlayerColor } from '@/lib/game/types';
 
 const ALL_COLORS: PlayerColor[] = ['red', 'blue', 'green', 'yellow'];
 
+const BOT_NAMES = [
+  'ARIA-7', 'Commander Vex', 'Zyn-404', 'Nova Prime',
+  'ATLAS', 'Byte', 'Captain Null', 'ECHO-9',
+  'Pilot 3XO', 'Admiral Flux', 'NEXUS', 'Orion-8',
+  'Sable Core', 'Unit Zero', 'Vector-5', 'PRISM',
+  'Kira Void', 'SIGMA', 'Dax-11', 'Commander Sol',
+];
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -60,10 +68,19 @@ export async function POST(
     const seatIndex = existingPlayers.length;
     const botSessionId = `bot:${gameId}:${seatIndex}`;
 
+    // Pick a random name not already used by another bot in this game
+    const takenNames = existingPlayers
+      .map((p: any) => p.display_name)
+      .filter(Boolean) as string[];
+    const availableNames = BOT_NAMES.filter((n) => !takenNames.includes(n));
+    const botName =
+      availableNames[Math.floor(Math.random() * availableNames.length)] ??
+      `CPU-${seatIndex}`;
+
     const { error: insertError } = await supabase.from('game_players').insert({
       game_id: gameId,
       session_id: botSessionId,
-      display_name: `CPU ${seatIndex}`,
+      display_name: botName,
       color: availableColor,
       seat_index: seatIndex,
       is_host: false,
