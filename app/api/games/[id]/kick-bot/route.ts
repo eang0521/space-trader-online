@@ -104,16 +104,18 @@ export async function POST(
       const nextVersion = currentVersion + 1;
       const statusVal = s.status === 'placement' ? 'playing' : s.status;
       if (currentVersion === originalVersion) {
-        // Optimistic lock on first write — if another request already advanced this turn,
-        // the update will match 0 rows and we bail rather than overwriting.
+        // Match both version=N and version IS NULL (for rows that predate the version column).
+        const versionFilter = originalVersion === 0
+          ? `version.eq.0,version.is.null`
+          : `version.eq.${originalVersion}`;
         const { data: rows, error: updateError } = await supabase
           .from('games')
           .update({ status: statusVal, state: s, version: nextVersion })
           .eq('id', gameId)
-          .eq('version', originalVersion)
+          .or(versionFilter)
           .select('id');
         if (updateError) {
-          // Column may not exist yet — fall back to unconditional update
+          // Column may not exist — fall back to unconditional update without version
           await supabase
             .from('games')
             .update({ status: statusVal, state: s })

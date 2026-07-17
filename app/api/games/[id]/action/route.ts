@@ -132,14 +132,18 @@ export async function POST(
       const statusVal = state.status === 'placement' ? 'playing' : state.status;
 
       if (currentVersion === originalVersion) {
+        // Match both version=N and version IS NULL (for rows that predate the version column).
+        const versionFilter = originalVersion === 0
+          ? `version.eq.0,version.is.null`
+          : `version.eq.${originalVersion}`;
         const { data: rows, error: updateError } = await supabase
           .from('games')
           .update({ status: statusVal, state, version: nextVersion })
           .eq('id', gameId)
-          .eq('version', originalVersion)
+          .or(versionFilter)
           .select('id');
         if (updateError) {
-          // Column may not exist yet — fall back to unconditional update
+          // Column may not exist — fall back to unconditional update without version
           await supabase
             .from('games')
             .update({ status: statusVal, state })
