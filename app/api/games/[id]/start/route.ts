@@ -3,6 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 import { createInitialGameState } from '@/lib/game/setup';
 import { LobbyPlayer, PlayerColor, GameState } from '@/lib/game/types';
 import { autoBotPlacement, runBotTurn } from '@/lib/game/bot';
+import { learnedValueFunction } from '@/lib/game/bot/model';
+import type { MLPWeights } from '@/lib/game/bot/model';
+import weightsJson from '@/scripts/weights.json';
+
+const botValueFunction = learnedValueFunction(weightsJson as unknown as MLPWeights);
 
 interface GamePlayerRow {
   id: string;
@@ -129,7 +134,7 @@ function advanceBotTurns(state: GameState): GameState {
     if (s.status === 'placement') {
       s = autoBotPlacement(s, s.currentPlayerIndex);
     } else if (s.status === 'playing' || s.status === 'game_end') {
-      s = runBotTurn(s, s.currentPlayerIndex);
+      s = runBotTurn(s, s.currentPlayerIndex, { valueFunction: botValueFunction });
     } else {
       break;
     }

@@ -21,8 +21,12 @@ import {
   autoBotPlacement,
   planBotTurn,
   applyBotAction,
-  ruleBasedValueFunction,
 } from '@/lib/game/bot';
+import { learnedValueFunction } from '@/lib/game/bot/model';
+import type { MLPWeights } from '@/lib/game/bot/model';
+import weightsJson from '@/scripts/weights.json';
+
+const botValueFunction = learnedValueFunction(weightsJson as unknown as MLPWeights);
 
 const BOT_ACTION_DELAY_MS = 750;
 
@@ -51,7 +55,7 @@ async function runBotTurnsAnimated(
       await persist(s);
     } else if (s.status === 'playing' || s.status === 'game_end') {
       const botIndex = s.currentPlayerIndex;
-      const actions = planBotTurn(s, botIndex, { valueFunction: ruleBasedValueFunction });
+      const actions = planBotTurn(s, botIndex, { valueFunction: botValueFunction });
 
       for (const action of actions) {
         await sleep(BOT_ACTION_DELAY_MS);
