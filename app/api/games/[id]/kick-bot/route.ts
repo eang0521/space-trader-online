@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { GameState, GameAction } from '@/lib/game/types';
-import { autoBotPlacement, planBotTurn, applyBotAction } from '@/lib/game/bot';
-import { hybridValueFunction } from '@/lib/game/bot/model';
-import type { MLPWeights } from '@/lib/game/bot/model';
-import weightsJson from '@/scripts/weights.json';
+import { autoBotPlacement, planBotTurn, applyBotAction, ruleBasedValueFunction } from '@/lib/game/bot';
 import { addLog, advanceTurn } from '@/lib/game/engine';
 
-const botValueFunction = hybridValueFunction(weightsJson as unknown as MLPWeights);
+const botValueFunction = ruleBasedValueFunction;
 const BOT_ACTION_DELAY_MS = 750;
 
 function sleep(ms: number): Promise<void> {

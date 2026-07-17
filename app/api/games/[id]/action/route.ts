@@ -22,11 +22,9 @@ import {
   planBotTurn,
   applyBotAction,
 } from '@/lib/game/bot';
-import { hybridValueFunction } from '@/lib/game/bot/model';
-import type { MLPWeights } from '@/lib/game/bot/model';
-import weightsJson from '@/scripts/weights.json';
+import { ruleBasedValueFunction } from '@/lib/game/bot';
 
-const botValueFunction = hybridValueFunction(weightsJson as unknown as MLPWeights);
+const botValueFunction = ruleBasedValueFunction;
 
 const BOT_ACTION_DELAY_MS = 750;
 
