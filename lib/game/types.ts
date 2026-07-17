@@ -52,6 +52,14 @@ export interface ActiveBuyer {
   completedDealIds: string[];
 }
 
+export interface ScoreEvent {
+  buyerCardId: string;
+  buyerName: string;
+  deals: string[]; // deal labels e.g. ['A', 'B']
+  credits: number;
+  isPrivate: boolean;
+}
+
 export interface PlayerState {
   id: string;
   sessionId: string;
@@ -65,6 +73,7 @@ export interface PlayerState {
   shipCol: number;
   isHost: boolean;
   isBot?: boolean;
+  scoreLog?: ScoreEvent[]; // sell history for end-game breakdown
 }
 
 export type LogEntryKind =

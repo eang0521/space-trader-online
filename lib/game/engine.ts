@@ -5,6 +5,7 @@ import {
   ResourceColor,
   GameLogEntry,
   LogEntryKind,
+  ScoreEvent,
 } from './types';
 import { PLANET_CARDS } from './data/planets';
 import { BUYER_CARDS } from './data/buyers';
@@ -457,12 +458,21 @@ export function applySell(
     dealLabels.push(dealDef.label);
   }
 
+  const scoreEvent: ScoreEvent = {
+    buyerCardId,
+    buyerName: buyerDef.name,
+    deals: dealLabels,
+    credits: totalCredits,
+    isPrivate,
+  };
+
   const newPlayers = state.players.map((p, i) => {
     if (i !== playerIndex) return p;
     const updated = {
       ...p,
       supply: p.supply.filter((c) => !allCubeIdSet.has(c.id)),
       score: p.score + totalCredits,
+      scoreLog: [...(p.scoreLog ?? []), scoreEvent],
     };
     if (isPrivate) {
       return { ...updated, privateBuyers: p.privateBuyers.filter((id) => id !== buyerCardId) };

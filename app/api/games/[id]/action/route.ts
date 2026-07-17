@@ -98,20 +98,10 @@ export async function POST(
 
     const supabase = await createClient();
 
-    const persist: PersistFn = async (state) => {
-      await supabase
-        .from('games')
-        .update({
-          status: state.status === 'placement' ? 'playing' : state.status,
-          state,
-        })
-        .eq('id', gameId);
-    };
-
     // Fetch current game state
     const { data: game, error: gameError } = await supabase
       .from('games')
-      .select('id, status, state')
+      .select('id, status, state, version')
       .eq('id', gameId)
       .single();
 
@@ -124,6 +114,34 @@ export async function POST(
     }
 
     let state = game.state as GameState;
+
+    const originalVersion = (game as { version?: number }).version ?? 0;
+    let currentVersion = originalVersion;
+
+    class ConcurrentModificationError extends Error {
+      constructor() { super('Concurrent modification'); }
+    }
+
+    const persist: PersistFn = async (state) => {
+      const nextVersion = currentVersion + 1;
+      const statusVal = state.status === 'placement' ? 'playing' : state.status;
+
+      if (currentVersion === originalVersion) {
+        const { data: rows } = await supabase
+          .from('games')
+          .update({ status: statusVal, state, version: nextVersion })
+          .eq('id', gameId)
+          .eq('version', originalVersion)
+          .select('id');
+        if (!rows || rows.length === 0) throw new ConcurrentModificationError();
+      } else {
+        await supabase
+          .from('games')
+          .update({ status: statusVal, state, version: nextVersion })
+          .eq('id', gameId);
+      }
+      currentVersion = nextVersion;
+    };
 
     if (state.status === 'ended') {
       return NextResponse.json({ error: 'Game is already over' }, { status: 409 });
@@ -283,6 +301,12 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('POST /api/games/[id]/action error:', err);
+    if (err instanceof Error && err.message === 'Concurrent modification') {
+      return NextResponse.json(
+        { error: 'Game state changed — please retry your action' },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

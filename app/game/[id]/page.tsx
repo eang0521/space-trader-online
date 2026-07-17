@@ -268,7 +268,7 @@ export default function GamePage() {
                 </p>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
                   Final Scores
                 </h3>
@@ -277,16 +277,30 @@ export default function GamePage() {
                   .map((player, i) => (
                     <div
                       key={player.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-gray-800"
+                      className="rounded-lg bg-gray-800 overflow-hidden"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400 text-sm w-4">{i + 1}.</span>
-                        <span className="text-white font-medium">{player.displayName}</span>
-                        {gameState.winners?.includes(player.id) && (
-                          <span className="text-xs text-yellow-400">Winner!</span>
+                      <div className="flex items-center justify-between p-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400 text-sm w-4">{i + 1}.</span>
+                          <span className="text-white font-medium">{player.displayName}</span>
+                          {gameState.winners?.includes(player.id) && (
+                            <span className="text-xs text-yellow-400">Winner!</span>
+                          )}
+                        </div>
+                        <span className="text-yellow-400 font-bold">{player.score}c</span>
+                      </div>
+                      <div className="border-t border-gray-700 mx-2" />
+                      <div className="max-h-96 overflow-y-auto px-2 py-1">
+                        {player.scoreLog && player.scoreLog.length > 0 ? (
+                          player.scoreLog.map((event, j) => (
+                            <div key={j} className={`text-xs py-0.5 ${event.isPrivate ? 'text-cyan-400' : 'text-gray-400'}`}>
+                              {event.isPrivate ? '★ ' : ''}{event.buyerName} ({event.deals.join('+')}) +{event.credits}c
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs py-1 text-gray-500">No sells recorded</div>
                         )}
                       </div>
-                      <span className="text-yellow-400 font-bold">{player.score}c</span>
                     </div>
                   ))}
               </div>
