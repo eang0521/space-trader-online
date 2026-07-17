@@ -9,9 +9,20 @@ interface ActionBarProps {
   gameStatus: string;
   currentPlayerName?: string;
   tutorialHighlightEndTurn?: boolean;
+  autoEndTurn?: boolean;
+  onToggleAutoEndTurn?: () => void;
 }
 
-export function ActionBar({ actionsRemaining, isMyTurn, onEndTurn, gameStatus, currentPlayerName, tutorialHighlightEndTurn }: ActionBarProps) {
+export function ActionBar({
+  actionsRemaining,
+  isMyTurn,
+  onEndTurn,
+  gameStatus,
+  currentPlayerName,
+  tutorialHighlightEndTurn,
+  autoEndTurn,
+  onToggleAutoEndTurn,
+}: ActionBarProps) {
   if (gameStatus === 'placement') {
     return (
       <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 flex flex-col gap-3">
@@ -62,7 +73,24 @@ export function ActionBar({ actionsRemaining, isMyTurn, onEndTurn, gameStatus, c
           Waiting for other players...
         </div>
       ) : (
-        <div className="flex items-center justify-end border-t border-gray-800 pt-2">
+        <div className="flex items-center justify-end gap-2 border-t border-gray-800 pt-2">
+          {onToggleAutoEndTurn && (
+            <button
+              onClick={onToggleAutoEndTurn}
+              title={autoEndTurn ? 'Auto-end turn is ON — click to disable' : 'Auto-end turn is OFF — click to enable'}
+              className={cn(
+                'flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-lg border transition-all duration-150',
+                autoEndTurn
+                  ? 'border-indigo-500 bg-indigo-900/40 text-indigo-300'
+                  : 'border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-400',
+              )}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+              </svg>
+              Auto
+            </button>
+          )}
           <div
             className={cn(
               'rounded-lg transition-all duration-200',

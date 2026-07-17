@@ -3,7 +3,7 @@ export { ruleBasedValueFunction } from './heuristics';
 export { enumerateCandidates, buildBestSellDeals, applyBotAction } from './candidates';
 export { planBotTurn } from './planner';
 export { encodeState, ENCODING_SIZE } from './encoder';
-export { learnedValueFunction, createWeights, deserializeWeights } from './model';
+export { learnedValueFunction, hybridValueFunction, createWeights, deserializeWeights } from './model';
 
 import { GameState } from '../types';
 import { addLog, advanceTurn, applyPlacement } from '../engine';

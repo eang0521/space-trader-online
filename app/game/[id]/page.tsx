@@ -28,6 +28,7 @@ export default function GamePage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [showEndModal, setShowEndModal] = useState(false);
   const [rulebookOpen, setRulebookOpen] = useState(false);
+  const [autoEndTurn, setAutoEndTurn] = useState(false);
 
   // Derived state
   const myPlayerIndex = gameState?.players.findIndex(
@@ -118,12 +119,12 @@ export default function GamePage() {
     if (result.error) setActionError(result.error);
   }, [performAction]);
 
-  // Auto-end turn when the player uses their last action point
+  // Auto-end turn when the player uses their last action point (opt-in toggle)
   useEffect(() => {
-    if (isMyTurn && gameState?.actionsRemaining === 0 && gameState?.status === 'playing') {
+    if (autoEndTurn && isMyTurn && gameState?.actionsRemaining === 0 && gameState?.status === 'playing') {
       handleEndTurn();
     }
-  }, [isMyTurn, gameState?.actionsRemaining, gameState?.status, handleEndTurn]);
+  }, [autoEndTurn, isMyTurn, gameState?.actionsRemaining, gameState?.status, handleEndTurn]);
 
   if (loading) {
     return (
@@ -202,6 +203,8 @@ export default function GamePage() {
             onEndTurn={handleEndTurn}
             gameStatus={gameState.status}
             currentPlayerName={currentPlayerName}
+            autoEndTurn={autoEndTurn}
+            onToggleAutoEndTurn={() => setAutoEndTurn((v) => !v)}
           />
 
           {actionError && (

@@ -1,6 +1,7 @@
 import { GameState } from '../types';
 import { encodeState, ENCODING_SIZE } from './encoder';
 import { ValueFunction } from './types';
+import { ruleBasedValueFunction } from './heuristics';
 
 // ---- Types ----
 
@@ -192,13 +193,24 @@ export function deserializeWeights(json: string): MLPWeights {
   return JSON.parse(json) as MLPWeights;
 }
 
-// ---- Production value function ----
+// ---- Production value functions ----
 
-// Drop-in replacement for ruleBasedValueFunction once weights are trained.
-// Load weights from disk (scripts/weights.json) and pass them here.
+// Pure learned value function — predicts final normalized score.
+// Alone it can be too flat for the greedy planner (see hybridValueFunction).
 export function learnedValueFunction(weights: MLPWeights): ValueFunction {
   return (state: GameState, playerIndex: number): number => {
     const vec = encodeState(state, playerIndex);
     return forward(weights, vec).output;
   };
+}
+
+// Hybrid: rule-based heuristic (~50–200) for tactical signal (move toward
+// cubes, gather, sell) combined with the learned MLP (~0–1, scaled ×30) for
+// long-horizon strategic value. The rule-based component prevents aimless
+// movement to depleted planets; the learned component breaks ties and adds
+// game-state awareness the hand-coded heuristic misses.
+export function hybridValueFunction(weights: MLPWeights): ValueFunction {
+  const learned = learnedValueFunction(weights);
+  return (state: GameState, playerIndex: number): number =>
+    ruleBasedValueFunction(state, playerIndex) + learned(state, playerIndex) * 30;
 }
