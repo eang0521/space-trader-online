@@ -6,15 +6,22 @@ const SPENDING_TYPES = new Set<GameAction['type']>(['MOVE', 'GATHER', 'SELL', 'D
 
 type ValueFn = (state: GameState, playerIndex: number) => number;
 
-// Apply all available REMOVE_BUYER free actions before a search node is evaluated.
+// Apply all available free (zero-cost) actions before a search node is evaluated.
+// Includes REMOVE_BUYER always, and private SELL during game_end_phase (those are free).
 function drainFreeActions(state: GameState, playerIndex: number): { state: GameState; actions: GameAction[] } {
   let s = state;
   const actions: GameAction[] = [];
-  for (let guard = 0; guard < 8; guard++) {
-    const removeAction = enumerateCandidates(s, playerIndex).find((a) => a.type === 'REMOVE_BUYER');
-    if (!removeAction) break;
-    s = applyBotAction(s, playerIndex, removeAction);
-    actions.push(removeAction);
+  for (let guard = 0; guard < 16; guard++) {
+    const freeAction = enumerateCandidates(s, playerIndex).find(
+      (a) => a.type === 'REMOVE_BUYER' || (a.type === 'SELL' && s.status === 'game_end_phase'),
+    );
+    if (!freeAction) break;
+    try {
+      s = applyBotAction(s, playerIndex, freeAction);
+    } catch {
+      break;
+    }
+    actions.push(freeAction);
   }
   return { state: s, actions };
 }

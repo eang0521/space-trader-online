@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { useGame } from '@/hooks/useGame';
@@ -47,6 +47,36 @@ export default function GamePage() {
       setShowEndModal(true);
     }
   }, [gameState?.status]);
+
+  // Auto-kick a stuck bot turn: if a bot has had the turn for >10 s with no state
+  // change, fire kick-bot. Each bot action persists immediately via realtime, so a
+  // healthy turn resets this timer repeatedly. Only fires when truly stuck.
+  const kickAttemptsRef = useRef(0);
+  const lastBotPlayerIndexRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!gameState || !gameId || !sessionId) return;
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer?.isBot) {
+      lastBotPlayerIndexRef.current = null;
+      kickAttemptsRef.current = 0;
+      return;
+    }
+    // Reset kick counter when the bot player changes (new bot turn)
+    if (lastBotPlayerIndexRef.current !== gameState.currentPlayerIndex) {
+      lastBotPlayerIndexRef.current = gameState.currentPlayerIndex;
+      kickAttemptsRef.current = 0;
+    }
+    if (kickAttemptsRef.current >= 3) return;
+    const timer = setTimeout(async () => {
+      kickAttemptsRef.current += 1;
+      await fetch(`/api/games/${gameId}/kick-bot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      }).catch(() => {});
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [gameState, gameId, sessionId]);
 
   // Redirect to lobby if game not started
   useEffect(() => {

@@ -55,7 +55,12 @@ async function runBotTurnsAnimated(
       await persist(s);
     } else if (s.status === 'playing' || s.status === 'game_end_triggered' || s.status === 'game_end_phase') {
       const botIndex = s.currentPlayerIndex;
-      const actions = planBotTurn(s, botIndex, { valueFunction: botValueFunction });
+      let actions: GameAction[] = [];
+      try {
+        actions = planBotTurn(s, botIndex, { valueFunction: botValueFunction });
+      } catch (err) {
+        console.error(`Bot planning error (player ${botIndex}, turn ${s.turnNumber}):`, err);
+      }
 
       for (const action of actions) {
         await sleep(BOT_ACTION_DELAY_MS);
