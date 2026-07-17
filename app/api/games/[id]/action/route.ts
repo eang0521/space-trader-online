@@ -34,11 +34,8 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-// Persist a game state snapshot to the database.
 type PersistFn = (state: GameState) => Promise<void>;
 
-// Run all consecutive bot turns, persisting each individual action with a delay
-// so the client can watch the moves unfold via realtime.
 async function runBotTurnsAnimated(
   persist: PersistFn,
   initialState: GameState,
@@ -58,6 +55,7 @@ async function runBotTurnsAnimated(
       let actions: GameAction[] = [];
       try {
         actions = planBotTurn(s, botIndex, { valueFunction: botValueFunction });
+        console.log(`Bot turn: player ${botIndex}, turn ${s.turnNumber}, planned ${actions.length} actions`);
       } catch (err) {
         console.error(`Bot planning error (player ${botIndex}, turn ${s.turnNumber}):`, err);
       }
@@ -67,12 +65,12 @@ async function runBotTurnsAnimated(
         try {
           s = applyBotAction(s, botIndex, action);
           await persist(s);
-        } catch {
+        } catch (err) {
+          console.error(`Bot action apply error (${action.type}):`, err);
           break;
         }
       }
 
-      // End the bot's turn
       await sleep(BOT_ACTION_DELAY_MS);
       s = addLog(s, botIndex, 'ended their turn', 'end_turn');
       s = advanceTurn(s);
@@ -103,10 +101,9 @@ export async function POST(
 
     const supabase = await createClient();
 
-    // Fetch current game state
     const { data: game, error: gameError } = await supabase
       .from('games')
-      .select('id, status, state, version')
+      .select('id, status, state')
       .eq('id', gameId)
       .single();
 
@@ -120,44 +117,15 @@ export async function POST(
 
     let state = game.state as GameState;
 
-    const originalVersion = (game as { version?: number }).version ?? 0;
-    let currentVersion = originalVersion;
-
-    class ConcurrentModificationError extends Error {
-      constructor() { super('Concurrent modification'); }
-    }
-
-    const persist: PersistFn = async (state) => {
-      const nextVersion = currentVersion + 1;
-      const statusVal = state.status === 'placement' ? 'playing' : state.status;
-
-      if (currentVersion === originalVersion) {
-        // Match both version=N and version IS NULL (for rows that predate the version column).
-        const versionFilter = originalVersion === 0
-          ? `version.eq.0,version.is.null`
-          : `version.eq.${originalVersion}`;
-        const { data: rows, error: updateError } = await supabase
-          .from('games')
-          .update({ status: statusVal, state, version: nextVersion })
-          .eq('id', gameId)
-          .or(versionFilter)
-          .select('id');
-        if (updateError) {
-          // Column may not exist — fall back to unconditional update without version
-          await supabase
-            .from('games')
-            .update({ status: statusVal, state })
-            .eq('id', gameId);
-        } else if (!rows || rows.length === 0) {
-          throw new ConcurrentModificationError();
-        }
-      } else {
-        await supabase
-          .from('games')
-          .update({ status: statusVal, state, version: nextVersion })
-          .eq('id', gameId);
+    const persist: PersistFn = async (s) => {
+      const statusVal = s.status === 'placement' ? 'playing' : s.status;
+      const { error } = await supabase
+        .from('games')
+        .update({ status: statusVal, state: s })
+        .eq('id', gameId);
+      if (error) {
+        console.error('persist error:', error);
       }
-      currentVersion = nextVersion;
     };
 
     if (state.status === 'ended') {
@@ -168,13 +136,11 @@ export async function POST(
       return NextResponse.json({ error: 'Game has not started yet' }, { status: 409 });
     }
 
-    // Find the player making the action
     const playerIndex = state.players.findIndex((p) => p.sessionId === sessionId);
     if (playerIndex === -1) {
       return NextResponse.json({ error: 'Player not in game' }, { status: 403 });
     }
 
-    // Apply action
     let newState: GameState;
 
     switch (action.type) {
@@ -283,8 +249,6 @@ export async function POST(
           return NextResponse.json({ error: validation.reason }, { status: 400 });
         }
         newState = applyPlacement(state, playerIndex, action.row, action.col);
-        // If a bot is next to place (or the game just started playing with a bot),
-        // persist the current state first then animate the bot's moves.
         if (newState.players[newState.currentPlayerIndex]?.isBot) {
           await persist(newState);
           await runBotTurnsAnimated(persist, newState);
@@ -299,7 +263,7 @@ export async function POST(
         }
         newState = addLog(state, playerIndex, 'ended their turn', 'end_turn');
         newState = advanceTurn(newState);
-        // Animate the bot's turn before responding
+        console.log(`END_TURN: next player ${newState.currentPlayerIndex}, isBot=${newState.players[newState.currentPlayerIndex]?.isBot}`);
         if (newState.players[newState.currentPlayerIndex]?.isBot) {
           await persist(newState);
           await runBotTurnsAnimated(persist, newState);
@@ -313,17 +277,10 @@ export async function POST(
       }
     }
 
-    // Normal (non-bot) persist
     await persist(newState);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('POST /api/games/[id]/action error:', err);
-    if (err instanceof Error && err.message === 'Concurrent modification') {
-      return NextResponse.json(
-        { error: 'Game state changed — please retry your action' },
-        { status: 409 },
-      );
-    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
