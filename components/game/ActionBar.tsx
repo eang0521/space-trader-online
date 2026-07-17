@@ -61,8 +61,13 @@ export function ActionBar({
         </div>
         <span className="text-sm text-gray-400">{actionsRemaining} remaining</span>
 
-        {gameStatus === 'game_end' && (
+        {gameStatus === 'game_end_triggered' && (
           <span className="ml-auto text-xs bg-amber-800 text-amber-200 px-2 py-0.5 rounded-full animate-pulse">
+            Game End Triggered
+          </span>
+        )}
+        {gameStatus === 'game_end_phase' && (
+          <span className="ml-auto text-xs bg-purple-800 text-purple-200 px-2 py-0.5 rounded-full animate-pulse">
             Game End Phase
           </span>
         )}

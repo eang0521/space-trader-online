@@ -52,6 +52,24 @@ export function BuyerMarket({
         </div>
       </div>
 
+      {/* Game end banners */}
+      {gameStatus === 'game_end_triggered' && (
+        <div className="bg-amber-950/40 border border-amber-700/60 rounded-xl px-3 py-2 text-xs text-amber-200/80">
+          <span className="text-amber-400 font-semibold">Game End triggered</span> — finish your turn normally, then each player gets one final turn to sell their private buyer.
+        </div>
+      )}
+      {gameStatus === 'game_end_phase' && (
+        <details className="bg-purple-950/40 border border-purple-700/60 rounded-xl overflow-hidden" open>
+          <summary className="cursor-pointer select-none flex items-center gap-2 px-3 py-2 text-xs font-semibold text-purple-300 hover:bg-purple-900/30 transition-colors">
+            <span className="text-purple-400">★</span>
+            Game End Phase — sell your private buyers
+          </summary>
+          <p className="px-3 pb-3 pt-1 text-xs text-purple-200/70 leading-relaxed">
+            Market sales are closed. Sell to your <span className="text-purple-300 font-medium">private buyers</span> below — it's free, no action points required!
+          </p>
+        </details>
+      )}
+
       {/* Market buyers */}
       <div className="flex flex-col gap-2">
         {market.map((activeBuyer) => {
@@ -72,6 +90,7 @@ export function BuyerMarket({
                 buyer={activeBuyer}
                 def={def}
                 playerSupply={isMyTurn ? playerSupply : []}
+                canSellNow={gameStatus === 'playing' || gameStatus === 'game_end_triggered'}
                 onSell={(dealSells) => onSell(activeBuyer.cardId, dealSells)}
               />
               {/* Remove button: always visible but highlighted red when the buyer is impossible */}
@@ -134,16 +153,24 @@ export function BuyerMarket({
           </h3>
           {privateBuyers.map((pb) => {
             const def = getBuyerDef(pb.cardId);
+            const isTutorialSell = tutorialHighlightBuyerId === pb.cardId;
             return (
-              <BuyerCard
+              <div
                 key={pb.cardId}
-                buyer={pb}
-                def={def}
-                playerSupply={isMyTurn ? playerSupply : []}
-                isPrivate
-                canSellNow={gameStatus === 'game_end'}
-                onSell={(dealSells) => onSell(pb.cardId, dealSells)}
-              />
+                className={cn(
+                  'rounded-xl transition-all duration-200',
+                  isTutorialSell && 'ring-4 ring-cyan-400 shadow-[0_0_16px_4px_rgba(34,211,238,0.45)] animate-pulse',
+                )}
+              >
+                <BuyerCard
+                  buyer={pb}
+                  def={def}
+                  playerSupply={isMyTurn ? playerSupply : []}
+                  isPrivate
+                  canSellNow={gameStatus === 'game_end_phase'}
+                  onSell={(dealSells) => onSell(pb.cardId, dealSells)}
+                />
+              </div>
             );
           })}
         </div>

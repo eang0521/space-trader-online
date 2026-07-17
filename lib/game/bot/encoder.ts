@@ -84,7 +84,7 @@ export function encodeState(state: GameState, playerIndex: number): Float32Array
   // Meta
   vec[i++] = state.actionsRemaining / 3;
   vec[i++] = Math.min(state.turnNumber, 30) / 30;
-  vec[i++] = state.status === 'game_end' ? 1 : 0;
+  vec[i++] = (state.status === 'game_end_triggered' || state.status === 'game_end_phase') ? 1 : 0;
   vec[i++] = Math.min(state.buyerDeck.length, 20) / 20;
 
   if (i !== ENCODING_SIZE) {

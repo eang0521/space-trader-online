@@ -100,7 +100,7 @@ export function PlanetCard({
         `bg-gradient-to-br ${gradient}`,
         isTutorialTarget && 'border-cyan-400 shadow-[0_0_20px_6px_rgba(34,211,238,0.5)] cursor-pointer',
         isTutorialGather && !isTutorialTarget && 'border-cyan-400',
-        isTutorialCallout && !isTutorialTarget && !isTutorialGather && 'border-amber-400 shadow-[0_0_14px_4px_rgba(251,191,36,0.4)]',
+        isTutorialCallout && !isTutorialTarget && !isTutorialGather && 'border-cyan-400 shadow-[0_0_14px_4px_rgba(34,211,238,0.4)]',
         isSelected && !isTutorialTarget && !isTutorialGather && !isTutorialCallout && 'border-white shadow-lg shadow-white/20',
         isTargetable && !isSelected && !isTutorialTarget && !isTutorialGather && !isTutorialCallout && 'border-yellow-400 shadow-md shadow-yellow-400/30 cursor-pointer',
         isCurrentPlayerHere && !isSelected && !isTargetable && !isTutorialTarget && !isTutorialGather && !isTutorialCallout && 'border-indigo-400',
@@ -185,9 +185,9 @@ export function PlanetCard({
         <div className="absolute inset-0 rounded-xl ring-4 ring-cyan-400 animate-pulse pointer-events-none" />
       )}
 
-      {/* Tutorial callout — amber pulse, informational only */}
+      {/* Tutorial callout — cyan pulse, informational only */}
       {isTutorialCallout && !isTutorialTarget && (
-        <div className="absolute inset-0 rounded-xl ring-4 ring-amber-400/70 animate-pulse pointer-events-none" />
+        <div className="absolute inset-0 rounded-xl ring-4 ring-cyan-400 animate-pulse pointer-events-none" />
       )}
     </motion.div>
   );

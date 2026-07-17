@@ -10,6 +10,11 @@ const BOT_NAMES = [
   'Pilot 3XO', 'Admiral Flux', 'NEXUS', 'Orion-8',
   'Sable Core', 'Unit Zero', 'Vector-5', 'PRISM',
   'Kira Void', 'SIGMA', 'Dax-11', 'Commander Sol',
+  'HELIX', 'Phantom-X', 'Rho-7', 'Admiral Caine',
+  'SPECTER', 'Delta-9', 'Null Prime', 'CIPHER',
+  'Lyra-2', 'ORIN', 'MIRA', 'Warp-6',
+  'Zenith', 'PULSE', 'Talon-4', 'Agent Hex',
+  'VEGA', 'Axon-3', 'Commander Ash', 'QUASAR',
 ];
 
 export async function POST(
@@ -47,7 +52,7 @@ export async function POST(
 
     const { data: existingPlayers, error: playersError } = await supabase
       .from('game_players')
-      .select('seat_index, color')
+      .select('seat_index, color, display_name')
       .eq('game_id', gameId)
       .order('seat_index', { ascending: true });
 

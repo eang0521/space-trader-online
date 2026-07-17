@@ -55,13 +55,34 @@ export default function TutorialPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [hint, setHint] = useState<string | null>(null);
   const [p2Animating, setP2Animating] = useState(false);
-  const [p2Narration, setP2Narration] = useState<string | null>(null);
+  const [autoEndTurn, setAutoEndTurn] = useState(false);
+  const [timeskipShowing, setTimeskipShowing] = useState(false);
+  const [timeskipOpaque, setTimeskipOpaque] = useState(false);
 
   // Keep a ref for gameState so P2 action callbacks always use latest state
   const gameStateRef = useRef(gameState);
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
+
+  // Timeskip overlay: fade in → hold → fade out → unmount.
+  // Double rAF ensures the browser paints opacity-0 before we flip to opacity-100,
+  // so the CSS transition is actually visible (React 18 batches same-tick updates).
+  useEffect(() => {
+    if (!timeskipShowing) return;
+    let raf1: number, raf2: number;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setTimeskipOpaque(true));
+    });
+    const t2 = setTimeout(() => setTimeskipOpaque(false), 1900);
+    const t3 = setTimeout(() => setTimeskipShowing(false), 2600);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [timeskipShowing]);
 
   const currentStep = TUTORIAL_STEPS[stepIndex];
   const isLastStep = stepIndex === TUTORIAL_STEPS.length - 1;
@@ -86,20 +107,16 @@ export default function TutorialPage() {
     (p2Actions: P2ScriptedAction[]) => {
       if (!p2Actions.length) return;
       setP2Animating(true);
-      setP2Narration(null);
       const maxDelay = Math.max(...p2Actions.map((a) => a.delayMs));
 
-      p2Actions.forEach(({ action, delayMs, narration }) => {
+      p2Actions.forEach(({ action, delayMs }) => {
         setTimeout(() => {
           setGameState((prev) => applyP2Action(action, prev));
-          if (narration) setP2Narration(narration);
         }, delayMs);
       });
 
-      // Clear animating flag after all actions have fired
       setTimeout(() => {
         setP2Animating(false);
-        setP2Narration(null);
       }, maxDelay + 400);
     },
     [applyP2Action],
@@ -161,8 +178,7 @@ export default function TutorialPage() {
               setHint('That buyer still has deals that could be completed. Find the one with only red deals left.');
               return;
             }
-            newState = applyRemoveBuyer(newState, action.buyerCardId);
-            newState = addLog(newState, P1_INDEX, 'removed an impossible buyer', 'remove');
+            newState = applyRemoveBuyer(newState, P1_INDEX, action.buyerCardId);
             break;
           }
           case 'END_TURN': {
@@ -180,8 +196,13 @@ export default function TutorialPage() {
 
       setGameState(newState);
 
-      const nextStep = stepIndex + 1;
-      setStepIndex(nextStep);
+      const nextIdx = stepIndex + 1;
+      setStepIndex(nextIdx);
+
+      const nextTutStep = TUTORIAL_STEPS[nextIdx];
+      if (nextTutStep?.stateJump) {
+        setGameState(nextTutStep.stateJump);
+      }
 
       if (step.p2Actions?.length) {
         runP2Sequence(step.p2Actions);
@@ -229,13 +250,37 @@ export default function TutorialPage() {
   }, [handleAction]);
 
   const handleNext = useCallback(() => {
+    if (currentStep.requireAutoEnabled && !autoEndTurn) {
+      setHint('Toggle the Auto button in the action bar below to continue!');
+      return;
+    }
     setHint(null);
     if (isLastStep) {
       router.push('/');
     } else {
-      setStepIndex((prev) => prev + 1);
+      const nextIdx = stepIndex + 1;
+      setStepIndex(nextIdx);
+      const nextTutStep = TUTORIAL_STEPS[nextIdx];
+      if (nextTutStep?.stateJump) {
+        setGameState(nextTutStep.stateJump);
+        setTimeskipOpaque(false);
+        setTimeskipShowing(true);
+      }
     }
-  }, [isLastStep, router]);
+  }, [isLastStep, router, stepIndex, currentStep.requireAutoEnabled, autoEndTurn]);
+
+  // Auto end-turn when the player exhausts actions and the current step expects it
+  useEffect(() => {
+    if (
+      autoEndTurn &&
+      !isP2Turn &&
+      !p2Animating &&
+      gameState.actionsRemaining === 0 &&
+      currentStep.waitFor?.type === 'END_TURN'
+    ) {
+      handleEndTurn();
+    }
+  }, [autoEndTurn, isP2Turn, p2Animating, gameState.actionsRemaining, currentStep.waitFor?.type, handleEndTurn]);
 
   // ---- Derived state ----
 
@@ -278,17 +323,34 @@ export default function TutorialPage() {
         <ScoringTrack players={gameState.players} />
       </div>
 
-      {/* Tutorial step banner */}
-      <TutorialOverlay
-        step={currentStep}
-        stepIndex={stepIndex}
-        totalSteps={TUTORIAL_STEPS.length}
-        hint={hint}
-        p2Animating={p2Animating}
-        p2Narration={p2Narration}
-        onNext={handleNext}
-        isLastStep={isLastStep}
-      />
+      {/* Tutorial step banner — hidden while P2 is animating */}
+      {!p2Animating && (
+        <TutorialOverlay
+          step={currentStep}
+          stepIndex={stepIndex}
+          totalSteps={TUTORIAL_STEPS.length}
+          hint={hint}
+          onNext={handleNext}
+          isLastStep={isLastStep}
+          nextDisabled={!!(currentStep.requireAutoEnabled && !autoEndTurn)}
+        />
+      )}
+
+      {/* Timeskip cinematic overlay */}
+      {timeskipShowing && (
+        <div
+          className={cn(
+            'fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-950/95 pointer-events-none transition-opacity duration-500',
+            timeskipOpaque ? 'opacity-100' : 'opacity-0',
+          )}
+        >
+          <div className="text-center">
+            <div className="text-7xl mb-5 select-none">⏩</div>
+            <p className="text-white text-3xl font-bold tracking-wide mb-2">Several Turns Later…</p>
+            <p className="text-gray-500 text-sm">The galaxy has changed</p>
+          </div>
+        </div>
+      )}
 
       {/* Main game area */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_320px_220px] gap-3 min-h-0">
@@ -330,6 +392,8 @@ export default function TutorialPage() {
               gameStatus={gameState.status}
               currentPlayerName={gameState.players[gameState.currentPlayerIndex]?.displayName}
               tutorialHighlightEndTurn={tutorialHighlightEndTurn}
+              autoEndTurn={autoEndTurn}
+              onToggleAutoEndTurn={() => setAutoEndTurn((v) => !v)}
             />
           </div>
         </div>

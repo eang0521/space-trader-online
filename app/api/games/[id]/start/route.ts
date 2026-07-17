@@ -133,7 +133,7 @@ function advanceBotTurns(state: GameState): GameState {
 
     if (s.status === 'placement') {
       s = autoBotPlacement(s, s.currentPlayerIndex);
-    } else if (s.status === 'playing' || s.status === 'game_end') {
+    } else if (s.status === 'playing' || s.status === 'game_end_triggered' || s.status === 'game_end_phase') {
       s = runBotTurn(s, s.currentPlayerIndex, { valueFunction: botValueFunction });
     } else {
       break;

@@ -81,7 +81,7 @@ export function isValidMove(
   toRow: number,
   toCol: number,
 ): { valid: boolean; reason?: string } {
-  if (state.status !== 'playing') {
+  if (state.status !== 'playing' && state.status !== 'game_end_triggered') {
     return { valid: false, reason: 'Game is not in playing phase' };
   }
   if (state.currentPlayerIndex !== playerIndex) {
@@ -259,7 +259,7 @@ export function isValidGather(
   planetRow: number,
   planetCol: number,
 ): { valid: boolean; reason?: string } {
-  if (state.status !== 'playing') {
+  if (state.status !== 'playing' && state.status !== 'game_end_triggered') {
     return { valid: false, reason: 'Game is not in playing phase' };
   }
   if (state.currentPlayerIndex !== playerIndex) {
@@ -332,7 +332,7 @@ export function applyGather(
   if (checkGameEndCondition(newState)) {
     newState = {
       ...newState,
-      status: 'game_end',
+      status: 'game_end_triggered',
       gameEndTriggeredByIndex: playerIndex,
     };
     newState = addLog(newState, playerIndex, 'triggered game end — only 1 planet remains!', 'system');
@@ -352,13 +352,13 @@ export function isValidSell(
   dealSells: { dealId: string; cubeIds: string[] }[],
   isPrivate = false,
 ): { valid: boolean; reason?: string } {
-  if (state.status !== 'playing' && state.status !== 'game_end') {
+  if (state.status !== 'playing' && state.status !== 'game_end_triggered' && state.status !== 'game_end_phase') {
     return { valid: false, reason: 'Game is not active' };
   }
   if (state.currentPlayerIndex !== playerIndex) {
     return { valid: false, reason: 'Not your turn' };
   }
-  if (state.actionsRemaining < 1) {
+  if (!isPrivate && state.actionsRemaining < 1) {
     return { valid: false, reason: 'No actions remaining' };
   }
   if (dealSells.length === 0) {
@@ -371,11 +371,11 @@ export function isValidSell(
     if (!player.privateBuyers.includes(buyerCardId)) {
       return { valid: false, reason: 'You do not have this private buyer' };
     }
-    if (state.status !== 'game_end') {
+    if (state.status !== 'game_end_phase') {
       return { valid: false, reason: 'Private buyer sales only allowed during game end phase' };
     }
   } else {
-    if (state.status === 'game_end') {
+    if (state.status !== 'playing' && state.status !== 'game_end_triggered') {
       return { valid: false, reason: 'Market buyer sales are not allowed during the end phase — only private buyers' };
     }
     const marketBuyer = state.market.find((b) => b.cardId === buyerCardId);
@@ -473,8 +473,10 @@ export function applySell(
   let newState: GameState = {
     ...state,
     players: newPlayers,
-    actionsRemaining: state.actionsRemaining - 1,
+    actionsRemaining: isPrivate ? state.actionsRemaining : state.actionsRemaining - 1,
   };
+
+  let discardLog: string | null = null;
 
   if (!isPrivate) {
     const marketBuyerIdx = newState.market.findIndex((b) => b.cardId === buyerCardId);
@@ -503,8 +505,10 @@ export function applySell(
         newMarket = newMarket.map((b, i) =>
           i === marketBuyerIdx ? { cardId: nextBuyerId, completedDealIds: [] } : b,
         );
+        discardLog = `market: ${buyerDef.name} completed → ${getBuyerDef(nextBuyerId).name} arrived`;
       } else {
         newMarket = newMarket.filter((_, i) => i !== marketBuyerIdx);
+        discardLog = `market: ${buyerDef.name} completed — deck empty`;
       }
     }
 
@@ -513,7 +517,9 @@ export function applySell(
 
   const dealText = dealLabels.join('+');
   const buyerText = isPrivate ? `private buyer (${buyerDef.name})` : buyerDef.name;
-  return addLog(newState, playerIndex, `sold ${dealText} to ${buyerText} · ${totalCredits}c`, 'sell');
+  newState = addLog(newState, playerIndex, `sold ${dealText} to ${buyerText} · ${totalCredits}c`, 'sell');
+  if (discardLog) newState = addLog(newState, playerIndex, discardLog, 'system');
+  return newState;
 }
 
 // ---------------------------------------------------------------------------
@@ -524,7 +530,7 @@ export function isValidDrawPrivateBuyer(
   state: GameState,
   playerIndex: number,
 ): { valid: boolean; reason?: string } {
-  if (state.status !== 'playing') {
+  if (state.status !== 'playing' && state.status !== 'game_end_triggered') {
     return { valid: false, reason: 'Game is not in playing phase' };
   }
   if (state.currentPlayerIndex !== playerIndex) {
@@ -604,9 +610,12 @@ export function canRemoveBuyer(state: GameState, buyerCardId: string): boolean {
 
 export function applyRemoveBuyer(
   state: GameState,
+  playerIndex: number,
   buyerCardId: string,
 ): GameState {
+  const removedName = getBuyerDef(buyerCardId).name;
   let newDeck = [...state.buyerDeck];
+  let discardLog: string;
 
   // Replace the removed buyer at the same position so the layout doesn't shift.
   const newMarket: typeof state.market = [];
@@ -617,15 +626,16 @@ export function applyRemoveBuyer(
       const [nextId, ...restDeck] = newDeck;
       newDeck = restDeck;
       newMarket.push({ cardId: nextId, completedDealIds: [] });
+      discardLog = `market: ${removedName} discarded → ${getBuyerDef(nextId).name} arrived`;
+    } else {
+      discardLog = `market: ${removedName} discarded — deck empty`;
     }
-    // else deck is empty — slot disappears
   }
 
-  return {
-    ...state,
-    market: newMarket,
-    buyerDeck: newDeck,
-  };
+  let newState = { ...state, market: newMarket, buyerDeck: newDeck };
+  newState = addLog(newState, playerIndex, `removed ${removedName} from market`, 'remove');
+  newState = addLog(newState, playerIndex, discardLog!, 'system');
+  return newState;
 }
 
 // ---------------------------------------------------------------------------
@@ -650,20 +660,35 @@ export function checkGameEndCondition(state: GameState): boolean {
 
 export function advanceTurn(state: GameState): GameState {
   const numPlayers = state.players.length;
-  let nextPlayerIndex = (state.currentPlayerIndex + 1) % numPlayers;
+  const nextPlayerIndex = (state.currentPlayerIndex + 1) % numPlayers;
 
-  // In game_end phase: cycle through all players to let them sell to private buyers
-  // Game ends when we have cycled back to the triggering player (or all have had a turn)
-  if (state.status === 'game_end') {
-    // If we've gone all the way around, finalize
-    if (nextPlayerIndex === state.gameEndTriggeredByIndex) {
+  // Triggerer ends their normal turn → open the game_end_phase for all players
+  if (state.status === 'game_end_triggered') {
+    return {
+      ...state,
+      status: 'game_end_phase',
+      currentPlayerIndex: nextPlayerIndex,
+      actionsRemaining: 0, // no action budget in game_end_phase; private sells are free
+      turnNumber: state.turnNumber + 1,
+    };
+  }
+
+  // In game_end_phase each player gets one final turn.
+  // After the triggerer ends their game_end_phase turn the cycle is complete.
+  if (state.status === 'game_end_phase') {
+    if (state.currentPlayerIndex === state.gameEndTriggeredByIndex) {
       return processGameEnd({
         ...state,
         currentPlayerIndex: nextPlayerIndex,
-        actionsRemaining: 3,
         turnNumber: state.turnNumber + 1,
       });
     }
+    return {
+      ...state,
+      currentPlayerIndex: nextPlayerIndex,
+      actionsRemaining: 0,
+      turnNumber: state.turnNumber + 1,
+    };
   }
 
   return {
@@ -705,8 +730,6 @@ export function calculateWinners(state: GameState): string[] {
 }
 
 export function processGameEnd(state: GameState): GameState {
-  // Allow players to sell private buyers in game_end phase (already handled by SELL action)
-  // Now finalize
   const winners = calculateWinners(state);
 
   let newState: GameState = {

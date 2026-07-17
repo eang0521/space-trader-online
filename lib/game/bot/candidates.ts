@@ -38,8 +38,8 @@ export function enumerateCandidates(state: GameState, playerIndex: number): Game
     }
   }
 
-  // SELL on market buyers (playing phase only)
-  if (state.status !== 'game_end') {
+  // SELL on market buyers (playing and game_end_triggered only)
+  if (state.status === 'playing' || state.status === 'game_end_triggered') {
     for (const activeBuyer of state.market) {
       const deals = buildBestSellDeals(
         player.supply,
@@ -55,8 +55,8 @@ export function enumerateCandidates(state: GameState, playerIndex: number): Game
     }
   }
 
-  // SELL private buyers (game_end phase only)
-  if (state.status === 'game_end') {
+  // SELL private buyers (game_end_phase only)
+  if (state.status === 'game_end_phase') {
     for (const privateBuyerId of player.privateBuyers) {
       const deals = buildBestSellDeals(player.supply, privateBuyerId, []);
       if (deals.length > 0) {
@@ -163,7 +163,7 @@ export function applyBotAction(
     case 'DRAW_PRIVATE_BUYER':
       return applyDrawPrivateBuyer(state, playerIndex);
     case 'REMOVE_BUYER':
-      return applyRemoveBuyer(state, action.buyerCardId);
+      return applyRemoveBuyer(state, playerIndex, action.buyerCardId);
     case 'END_TURN':
       return advanceTurn(addLog(state, playerIndex, 'ended their turn', 'end_turn'));
     default:

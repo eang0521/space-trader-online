@@ -53,7 +53,7 @@ async function runBotTurnsAnimated(
       await sleep(BOT_ACTION_DELAY_MS);
       s = autoBotPlacement(s, s.currentPlayerIndex);
       await persist(s);
-    } else if (s.status === 'playing' || s.status === 'game_end') {
+    } else if (s.status === 'playing' || s.status === 'game_end_triggered' || s.status === 'game_end_phase') {
       const botIndex = s.currentPlayerIndex;
       const actions = planBotTurn(s, botIndex, { valueFunction: botValueFunction });
 
@@ -238,8 +238,7 @@ export async function POST(
             { status: 400 },
           );
         }
-        newState = applyRemoveBuyer(state, action.buyerCardId);
-        newState = addLog(newState, playerIndex, 'removed an impossible buyer', 'remove');
+        newState = applyRemoveBuyer(state, playerIndex, action.buyerCardId);
         break;
       }
 

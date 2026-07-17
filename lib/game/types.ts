@@ -1,6 +1,6 @@
 export type ResourceColor = 'blue' | 'green' | 'yellow' | 'white' | 'red' | 'black';
 export type PlayerColor = 'red' | 'blue' | 'green' | 'yellow';
-export type GameStatus = 'lobby' | 'placement' | 'playing' | 'game_end' | 'ended';
+export type GameStatus = 'lobby' | 'placement' | 'playing' | 'game_end_triggered' | 'game_end_phase' | 'ended';
 
 export interface ResourceCube {
   id: string;

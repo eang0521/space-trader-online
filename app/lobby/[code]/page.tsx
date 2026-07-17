@@ -27,7 +27,7 @@ export default function LobbyPage() {
           setLookupError(data.error ?? 'Game not found');
           return;
         }
-        if (data.status === 'playing' || data.status === 'game_end') {
+        if (data.status === 'playing' || data.status === 'game_end_triggered' || data.status === 'game_end_phase') {
           router.replace(`/game/${data.gameId}`);
           return;
         }
@@ -50,7 +50,7 @@ export default function LobbyPage() {
 
   // Watch for game start via realtime
   useEffect(() => {
-    if (gameState?.status === 'playing' || gameState?.status === 'game_end') {
+    if (gameState?.status === 'playing' || gameState?.status === 'game_end_triggered' || gameState?.status === 'game_end_phase') {
       router.replace(`/game/${gameId}`);
     }
   }, [gameState?.status, gameId, router]);
