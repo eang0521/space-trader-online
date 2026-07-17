@@ -15,7 +15,8 @@ import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { GameState, LobbyPlayer, PlayerColor } from '../lib/game/types';
 import { createInitialGameState } from '../lib/game/setup';
-import { autoBotPlacement, runBotTurn, ruleBasedValueFunction } from '../lib/game/bot';
+import { autoBotPlacement, runBotTurn, ruleBasedValueFunction, planBotTurn, applyBotAction } from '../lib/game/bot';
+import { addLog, advanceTurn } from '../lib/game/engine';
 import { learnedValueFunction } from '../lib/game/bot/model';
 import { encodeState } from '../lib/game/bot/encoder';
 import {
@@ -84,22 +85,34 @@ interface StepRecord {
 function runEpisode(weights: MLPWeights | null): { records: StepRecord[]; finalScores: number[] } {
   let state = bootstrapGame();
   const records: StepRecord[] = [];
-  const valueFunc = weights ? learnedValueFunction(weights) : ruleBasedValueFunction;
+  const botConfig = { valueFunction: weights ? learnedValueFunction(weights) : ruleBasedValueFunction };
+
+  // Record a snapshot after every individual action so the model trains on
+  // states with actionsRemaining = 3, 2, 1, and 0 — not just turn-start (=3).
+  // Without this the planner's post-action evaluations fall outside the
+  // training distribution, causing the bot to always prefer END_TURN.
+  function recordTurn(pi: number): void {
+    const actions = planBotTurn(state, pi, botConfig);
+    for (const action of actions) {
+      records.push({ stateVec: encodeState(state, pi), playerIndex: pi });
+      state = applyBotAction(state, pi, action);
+    }
+    // Record final state of the turn (actionsRemaining may be 0 or mid-value)
+    records.push({ stateVec: encodeState(state, pi), playerIndex: pi });
+    state = addLog(state, pi, 'ended their turn', 'end_turn');
+    state = advanceTurn(state);
+  }
 
   // Playing phase
   let guard = 0;
   while (state.status === 'playing' && guard++ < 300) {
-    const pi = state.currentPlayerIndex;
-    records.push({ stateVec: encodeState(state, pi), playerIndex: pi });
-    state = runBotTurn(state, pi, { valueFunction: valueFunc });
+    recordTurn(state.currentPlayerIndex);
   }
 
   // Game-end phase: players sell private buyers
   guard = 0;
   while (state.status === 'game_end' && guard++ < 20) {
-    const pi = state.currentPlayerIndex;
-    records.push({ stateVec: encodeState(state, pi), playerIndex: pi });
-    state = runBotTurn(state, pi, { valueFunction: valueFunc });
+    recordTurn(state.currentPlayerIndex);
   }
 
   // Normalize final scores so targets live in [0, 1]
