@@ -118,6 +118,13 @@ export default function GamePage() {
     if (result.error) setActionError(result.error);
   }, [performAction]);
 
+  // Auto-end turn when the player uses their last action point
+  useEffect(() => {
+    if (isMyTurn && gameState?.actionsRemaining === 0 && gameState?.status === 'playing') {
+      handleEndTurn();
+    }
+  }, [isMyTurn, gameState?.actionsRemaining, gameState?.status, handleEndTurn]);
+
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
