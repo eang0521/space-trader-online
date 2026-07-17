@@ -132,13 +132,21 @@ export async function POST(
       const statusVal = state.status === 'placement' ? 'playing' : state.status;
 
       if (currentVersion === originalVersion) {
-        const { data: rows } = await supabase
+        const { data: rows, error: updateError } = await supabase
           .from('games')
           .update({ status: statusVal, state, version: nextVersion })
           .eq('id', gameId)
           .eq('version', originalVersion)
           .select('id');
-        if (!rows || rows.length === 0) throw new ConcurrentModificationError();
+        if (updateError) {
+          // Column may not exist yet — fall back to unconditional update
+          await supabase
+            .from('games')
+            .update({ status: statusVal, state })
+            .eq('id', gameId);
+        } else if (!rows || rows.length === 0) {
+          throw new ConcurrentModificationError();
+        }
       } else {
         await supabase
           .from('games')

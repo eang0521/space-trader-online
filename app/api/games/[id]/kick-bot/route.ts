@@ -106,13 +106,21 @@ export async function POST(
       if (currentVersion === originalVersion) {
         // Optimistic lock on first write — if another request already advanced this turn,
         // the update will match 0 rows and we bail rather than overwriting.
-        const { data: rows } = await supabase
+        const { data: rows, error: updateError } = await supabase
           .from('games')
           .update({ status: statusVal, state: s, version: nextVersion })
           .eq('id', gameId)
           .eq('version', originalVersion)
           .select('id');
-        if (!rows || rows.length === 0) throw new Error('Version conflict');
+        if (updateError) {
+          // Column may not exist yet — fall back to unconditional update
+          await supabase
+            .from('games')
+            .update({ status: statusVal, state: s })
+            .eq('id', gameId);
+        } else if (!rows || rows.length === 0) {
+          throw new Error('Version conflict');
+        }
       } else {
         await supabase
           .from('games')
